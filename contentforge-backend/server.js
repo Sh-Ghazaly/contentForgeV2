@@ -9,7 +9,6 @@ const path = require("path");
 const connectDB = require("./config/db");
 const { startTrendScheduler } = require("./services/trendService");
 const chatRoutes = require("./routes/chat");
-const cron = require("node-cron");
 const { User, PlatformSettings, Notification } = require("./models");
 const posterRoutes = require("./routes/posterRouter");
 const { checkAndSendExpiryWarnings } = require("./services/cronJobs");
@@ -77,7 +76,6 @@ app.use(
   "/uploads/generated",
   express.static(path.join(__dirname, "uploads", "generated")),
 );
-// ✅ Route الجديد للـ Subscription
 app.use("/api/subscription", require("./routes/subscription"));
 
 // ── Health check ───────────────────────────────────────────────────────────────
@@ -90,30 +88,34 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ── 404 handler ───────────────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
+// ── Cron secret middleware ────────────────────────────────────────────────────
+const cronAuth = (req, res, next) => {
+  const secret = req.headers["x-cron-secret"];
+  if (!secret || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  next();
+};
+
+// ── Cron endpoint: Check trial expiry warnings (run daily at midnight) ────────
+app.get("/api/cron/check-expiry", cronAuth, async (req, res) => {
+  try {
+    console.log("⏰ جاري تشغيل فحص انتهاء فترات التجربة للمستخدمين...");
+    await checkAndSendExpiryWarnings();
+    res.json({ ok: true, job: "check-expiry" });
+  } catch (err) {
+    console.error("[Cron] check-expiry error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-// ── Global error handler ──────────────────────────────────────────────────────
-app.use((err, req, res, next) => {
-  console.error("❌ Server Error:", err.message);
-  res.status(err.status || 500).json({
-    message: err.message || "Internal server error",
-  });
-});
-
-// ── Cron: Check trial expiry warnings at midnight ────────────────────────────
-cron.schedule("0 0 * * *", () => {
-  console.log("⏰ جاري تشغيل فحص انتهاء فترات التجربة للمستخدمين...");
-  checkAndSendExpiryWarnings();
-});
-
-// ── Cron: Send expiry warning emails at 9 AM ─────────────────────────────────
-cron.schedule("0 9 * * *", async () => {
+// ── Cron endpoint: Send expiry warning emails (run daily at 9 AM) ─────────────
+app.get("/api/cron/expiry-emails", cronAuth, async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne();
-    if (!settings?.sendExpiryWarning) return;
+    if (!settings?.sendExpiryWarning) {
+      return res.json({ ok: true, skipped: true });
+    }
 
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
@@ -126,23 +128,21 @@ cron.schedule("0 9 * * *", async () => {
     });
 
     users.forEach((user) => {
-      sendTrialExpiryWarningEmail(
-        user.email,
-        user.name,
-        user.trialEndsAt,
-      ).catch((err) =>
-        console.error(`Expiry email error for ${user.email}:`, err.message),
+      sendTrialExpiryWarningEmail(user.email, user.name, user.trialEndsAt).catch(
+        (err) => console.error(`Expiry email error for ${user.email}:`, err.message),
       );
     });
 
     console.log(`[Cron] Sent expiry warning to ${users.length} users`);
+    res.json({ ok: true, usersNotified: users.length });
   } catch (err) {
-    console.error("[Cron] Error:", err.message);
+    console.error("[Cron] expiry-emails error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// ── Cron: Scheduled Post Reminders at 8:00 AM ────────────────────────────────
-cron.schedule("0 8 * * *", async () => {
+// ── Cron endpoint: Scheduled post reminders (run daily at 8 AM) ───────────────
+app.get("/api/cron/post-reminders", cronAuth, async (req, res) => {
   try {
     const { Post } = require("./models");
 
@@ -161,18 +161,12 @@ cron.schedule("0 8 * * *", async () => {
     const todaysPosts = await Post.find({
       status: "scheduled",
       scheduledAt: { $gte: todayStart, $lte: todayEnd },
-    }).populate({
-      path: "calendar",
-      populate: { path: "user", model: "User" },
-    });
+    }).populate({ path: "calendar", populate: { path: "user", model: "User" } });
 
     const tomorrowsPosts = await Post.find({
       status: "scheduled",
       scheduledAt: { $gte: tomorrowStart, $lte: tomorrowEnd },
-    }).populate({
-      path: "calendar",
-      populate: { path: "user", model: "User" },
-    });
+    }).populate({ path: "calendar", populate: { path: "user", model: "User" } });
 
     function groupByUser(posts) {
       const byUser = {};
@@ -187,14 +181,9 @@ cron.schedule("0 8 * * *", async () => {
     }
 
     for (const { user, posts } of Object.values(groupByUser(todaysPosts))) {
-      sendScheduledPostReminderEmail(user.email, user.name, posts).catch(
-        (err) =>
-          console.error(
-            `[Cron] Today email failed for ${user.email}:`,
-            err.message,
-          ),
+      sendScheduledPostReminderEmail(user.email, user.name, posts).catch((err) =>
+        console.error(`[Cron] Today email failed for ${user.email}:`, err.message),
       );
-
       await Notification.create({
         recipient: user._id,
         recipientRole: "user",
@@ -204,21 +193,12 @@ cron.schedule("0 8 * * *", async () => {
         read: false,
         postId: posts[0]._id,
       });
-
-      console.log(
-        `[Cron] Today reminder → ${user.email} (${posts.length} posts)`,
-      );
     }
 
     for (const { user, posts } of Object.values(groupByUser(tomorrowsPosts))) {
-      sendScheduledPostTomorrowEmail(user.email, user.name, posts).catch(
-        (err) =>
-          console.error(
-            `[Cron] Tomorrow email failed for ${user.email}:`,
-            err.message,
-          ),
+      sendScheduledPostTomorrowEmail(user.email, user.name, posts).catch((err) =>
+        console.error(`[Cron] Tomorrow email failed for ${user.email}:`, err.message),
       );
-
       await Notification.create({
         recipient: user._id,
         recipientRole: "user",
@@ -227,24 +207,19 @@ cron.schedule("0 8 * * *", async () => {
         type: "scheduled_tomorrow",
         read: false,
       });
-
-      console.log(
-        `[Cron] Tomorrow reminder → ${user.email} (${posts.length} posts)`,
-      );
     }
+
+    res.json({ ok: true, today: todaysPosts.length, tomorrow: tomorrowsPosts.length });
   } catch (err) {
-    console.error("[Cron] Scheduled post reminder error:", err.message);
+    console.error("[Cron] post-reminders error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// ── Auto-block cron job (every 5 minutes) ─────────────────────────────────
-cron.schedule("*/5 * * * *", async () => {
+// ── Cron endpoint: Auto-block users (run every 5 minutes) ────────────────────
+app.get("/api/cron/auto-block", cronAuth, async (req, res) => {
   try {
-    console.log(
-      "=== [Cron Job] جاري فحص الحسابات المستحقة للحظر التلقائي... ===",
-    );
     const now = new Date();
-
     const usersToBlock = await User.find({
       "moderation.blockStatus": "warning",
       "moderation.gracePeriodExpiresAt": { $lte: now },
@@ -253,7 +228,6 @@ cron.schedule("*/5 * * * *", async () => {
 
     if (usersToBlock.length > 0) {
       const userIds = usersToBlock.map((user) => user._id);
-
       await User.updateMany(
         { _id: { $in: userIds } },
         {
@@ -265,7 +239,6 @@ cron.schedule("*/5 * * * *", async () => {
         },
       );
 
-      // Notify blocked users
       for (const user of usersToBlock) {
         try {
           await createNotification({
@@ -280,35 +253,44 @@ cron.schedule("*/5 * * * *", async () => {
           console.error("[Notify] Auto-block notification failed:", err.message);
         }
       }
-
-      console.log(
-        `[Cron Job] تم حظر ${usersToBlock.length} مستخدمين تلقائياً.`,
-      );
     }
-  } catch (error) {
-    console.error("خطأ في الـ Cron Job:", error.message);
+
+    res.json({ ok: true, blocked: usersToBlock.length });
+  } catch (err) {
+    console.error("[Cron] auto-block error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// ── Clean unverified expired users (hourly) ───────────────────────────────
-cron.schedule("0 * * * *", async () => {
-  await User.deleteMany({
-    isVerified: false,
-    verificationCodeExpires: { $lt: new Date() },
-  });
-  console.log("[Cron] Cleaned unverified expired users");
+// ── Cron endpoint: Clean unverified expired users (run hourly) ────────────────
+app.get("/api/cron/clean-unverified", cronAuth, async (req, res) => {
+  try {
+    const result = await User.deleteMany({
+      isVerified: false,
+      verificationCodeExpires: { $lt: new Date() },
+    });
+    console.log("[Cron] Cleaned unverified expired users");
+    res.json({ ok: true, deleted: result.deletedCount });
+  } catch (err) {
+    console.error("[Cron] clean-unverified error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-
-// Cron Job لتصفير الـ Usage شهرياً - أول يوم في كل شهر الساعة 12 بالليل
-cron.schedule("0 0 1 * *", async () => {
-  console.log("🔄 جاري تصفير عدادات الاستخدام الشهرية...");
-  await resetMonthlyUsage();
+// ── Cron endpoint: Reset monthly usage (run 1st of every month at midnight) ───
+app.get("/api/cron/reset-monthly-usage", cronAuth, async (req, res) => {
+  try {
+    console.log("🔄 جاري تصفير عدادات الاستخدام الشهرية...");
+    await resetMonthlyUsage();
+    res.json({ ok: true, job: "reset-monthly-usage" });
+  } catch (err) {
+    console.error("[Cron] reset-monthly-usage error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
 });
 
-// Cron Job لإعادة المستخدمين للخطة المجانية عند انتهاء الاشتراك
-cron.schedule("0 * * * *", async () => {
-  // كل ساعة
+// ── Cron endpoint: Downgrade expired subscriptions (run hourly) ───────────────
+app.get("/api/cron/check-subscriptions", cronAuth, async (req, res) => {
   try {
     const now = new Date();
     const expiredUsers = await User.find({
@@ -337,18 +319,28 @@ cron.schedule("0 * * * *", async () => {
           },
         },
       );
-      console.log(
-        `🔴 تم إعادة ${expiredUsers.length} مستخدم للخطة المجانية (انتهى اشتراكهم)`,
-      );
+      console.log(`🔴 تم إعادة ${expiredUsers.length} مستخدم للخطة المجانية`);
     }
-  } catch (error) {
-    console.error("❌ خطأ في فحص الاشتراكات المنتهية:", error.message);
+
+    res.json({ ok: true, downgraded: expiredUsers.length });
+  } catch (err) {
+    console.error("[Cron] check-subscriptions error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
   }
 });
 
-// ── Start server ──────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 ContentForge API running on http://localhost:${PORT}`);
-  console.log(`📋 Health check: http://localhost:${PORT}/api/health\n`);
+// ── 404 handler ───────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
+
+// ── Global error handler ──────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+  console.error("❌ Server Error:", err.message);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal server error",
+  });
+});
+
+// ── Export for Vercel (no app.listen) ────────────────────────────────────────
+module.exports = app;
