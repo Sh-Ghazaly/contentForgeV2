@@ -1,11 +1,16 @@
 // backend/services/embeddingService.js
-const { OpenAI } = require("openai"); // استيراد مكتبة OpenAI
 const { Brand } = require("../models");
-const { pipeline } = require("@xenova/transformers");
-// تعريف الـ Client وقراءة الـ Key تلقائياً من الـ .env (اسم المتغير لازم يكون OPENAI_API_KEY)
-// const openai = new OpenAI({
-//   apiKey: process.env.OPENAI_API_KEY,
-// });
+
+// ── Lazy-load the pipeline (dynamic import because @xenova/transformers is ESM) ─
+let _pipeline = null;
+
+async function getPipeline() {
+  if (!_pipeline) {
+    const { pipeline } = await import("@xenova/transformers");
+    _pipeline = await pipeline("feature-extraction", "Xenova/all-MiniLM-L6-v2");
+  }
+  return _pipeline;
+}
 
 // ── Split text into ~300-word chunks ─────────────────────────────────────────
 function chunkText(text, maxWords = 300) {
@@ -17,38 +22,12 @@ function chunkText(text, maxWords = 300) {
   return chunks;
 }
 
-// ── Embed a single string with OpenAI ────────────────────────────────────────
-// async function embedText(text) {
-//   if (!text || text.trim() === "") return [];
-
-//   try {
-//     const response = await openai.embeddings.create({
-//       model: "text-embedding-3-small", // الموديل الأحدث والأوفر من OpenAI
-//       input: text,
-//     });
-
-//     // OpenAI بترجع الـ vector جوه data[0].embedding
-//     return response.data[0].embedding;
-//   } catch (error) {
-//     console.error("OpenAI Embedding Error:", error);
-//     throw error;
-//   }
-// }
-
+// ── Embed a single string ─────────────────────────────────────────────────────
 async function embedText(text) {
   if (!text || text.trim() === "") return [];
-
   try {
-    // تحميل الموديل محلياً (بيتحمل أول مرة بس وبيتحفظ عندك)
-    const extractor = await pipeline(
-      "feature-extraction",
-      "Xenova/all-MiniLM-L6-v2",
-    );
-
-    // توليد الـ Embedding
+    const extractor = await getPipeline();
     const output = await extractor(text, { pooling: "mean", normalize: true });
-
-    // تحويل الناتج لـ Array عادي علشان الـ MongoDB والـ Cosine Similarity
     return Array.from(output.data);
   } catch (error) {
     console.error("Local Embedding Error:", error);
@@ -59,17 +38,14 @@ async function embedText(text) {
 // ── Embed brand vault and save to MongoDB ─────────────────────────────────────
 async function embedBrandVault(brandId, guidelinesText, pastPostsText) {
   const chunks = [];
-
   for (const chunk of chunkText(guidelinesText)) {
     const embedding = await embedText(chunk);
     chunks.push({ content: chunk, embedding, source: "guidelines" });
   }
-
   for (const chunk of chunkText(pastPostsText)) {
     const embedding = await embedText(chunk);
     chunks.push({ content: chunk, embedding, source: "past_posts" });
   }
-
   await Brand.findByIdAndUpdate(brandId, { ragChunks: chunks });
   return chunks.length;
 }
@@ -86,9 +62,7 @@ function cosineSimilarity(a, b) {
 async function retrieveRelevantChunks(brandId, query, topK = 4) {
   const brand = await Brand.findById(brandId);
   if (!brand?.ragChunks?.length) return [];
-
   const queryVec = await embedText(query);
-
   return brand.ragChunks
     .map((chunk) => ({
       content: chunk.content,
