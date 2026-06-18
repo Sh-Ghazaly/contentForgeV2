@@ -35,13 +35,13 @@ router.get("/stats/facebook", protect, async (req, res) => {
     const [pageRes, insightsRes] = await Promise.all([
       axios.get(`${BASE_URL}/${conn.pageId}`, {
         params: {
-          fields: "name,fan_count,published_posts.limit(1).summary(true)",
+          fields: "name,fan_count,posts.limit(1).summary(true)",
           access_token: conn.accessToken,
         },
       }),
       axios.get(`${BASE_URL}/${conn.pageId}/insights`, {
         params: {
-          metric: "page_post_engagements,page_impressions_unique",
+          metric: "page_impressions_unique,page_actions_post_reactions_total",
           period: "day",
           access_token: conn.accessToken,
         },
@@ -51,19 +51,19 @@ router.get("/stats/facebook", protect, async (req, res) => {
     const data = pageRes.data;
     const insights = insightsRes.data.data || [];
 
-    const likes =
-      insights
-        .find((m) => m.name === "page_post_engagements")
-        ?.values?.slice(-1)[0]?.value ?? 0;
     const reach =
       insights
         .find((m) => m.name === "page_impressions_unique")
+        ?.values?.slice(-1)[0]?.value ?? 0;
+    const likes =
+      insights
+        .find((m) => m.name === "page_actions_post_reactions_total")
         ?.values?.slice(-1)[0]?.value ?? 0;
 
     res.json({
       pageName: data.name,
       followers: data.fan_count,
-      totalPosts: data.published_posts?.summary?.total_count ?? 0,
+      totalPosts: data.posts?.summary?.total_count ?? 0,
       likes,
       reach,
     });
@@ -337,7 +337,7 @@ router.post(
       await post.save();
 
       await User.findByIdAndUpdate(req.user._id, {
-        $inc: { "usage.aiImagesGenerated": 1 }
+        $inc: { "usage.aiImagesGenerated": 1 },
       });
 
       res.json({

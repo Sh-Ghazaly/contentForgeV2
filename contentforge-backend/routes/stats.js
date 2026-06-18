@@ -3,7 +3,7 @@ const router = express.Router();
 const protect = require("../middleware/auth");
 const { Brand, Calendar, Post } = require("../models");
 
-// GET /api/stats — sidebar quick stats for the logged-in user
+// GET /s — sidebar quick stats for the logged-in user
 router.get("/", protect, async (req, res) => {
   try {
     const userId = req.user._id;
