@@ -1,10 +1,10 @@
 // backend/config/passport.js
-require('dotenv').config();
+require("dotenv").config();
 
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
 // const FacebookStrategy = require('passport-facebook').Strategy;
-const { User, PlatformSettings } = require('../models');
+const { User, PlatformSettings } = require("../models");
 
 // ── Google Strategy ──────────────────────────────────────────────────────────
 passport.use(
@@ -12,16 +12,18 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:3000/api/auth/google/callback",
-      scope: ['profile', 'email'],
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        "https://content-forge-v2.vercel.app/api/auth/google/callback",
+      scope: ["profile", "email"],
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0]?.value;
         const avatar = profile.photos?.[0]?.value;
-        const name = profile.displayName || profile.name?.givenName || 'User';
+        const name = profile.displayName || profile.name?.givenName || "User";
 
-        if (!email) return done(new Error('No email from Google'), null);
+        if (!email) return done(new Error("No email from Google"), null);
 
         let user = await User.findOne({
           $or: [{ googleId: profile.id }, { email }],
@@ -45,8 +47,8 @@ passport.use(
           googleId: profile.id,
           avatar,
           isVerified: true,
-          plan: 'free',
-          subscriptionType: 'none',
+          plan: "free",
+          subscriptionType: "none",
           planEndsAt: new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000),
           isTrial: true,
           hasUsedTrial: true,
@@ -57,8 +59,8 @@ passport.use(
       } catch (err) {
         done(err, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 // ── Facebook Strategy ────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ passport.use(
 //     {
 //       clientID: process.env.FACEBOOK_APP_ID,
 //       clientSecret: process.env.FACEBOOK_APP_SECRET,
-//       callbackURL: `${process.env.API_URL || 'http://localhost:3000'}/api/auth/facebook/callback`,
+//       callbackURL: `${process.env.API_URL || 'https://content-forge-v2.vercel.app'}/api/auth/facebook/callback`,
 //       profileFields: ['id', 'displayName', 'photos', 'email', 'first_name', 'last_name'],
 //       scope: ['email', 'public_profile'],
 //       enableProof: true,

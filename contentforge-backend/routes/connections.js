@@ -153,7 +153,8 @@ router.get("/meta/callback", async (req, res) => {
         `https://graph.facebook.com/${API_VERSION}/${page.id}`,
         {
           params: {
-      fields: "name,fan_count,feed.limit(1).summary(true),instagram_business_account{id,username,followers_count,media_count}",
+            fields:
+              "name,fan_count,feed.limit(1).summary(true),instagram_business_account{id,username,followers_count,media_count}",
             access_token: pageToken,
           },
         },
@@ -171,7 +172,8 @@ router.get("/meta/callback", async (req, res) => {
           { label: "Followers", value: page.fan_count || 0 },
           {
             label: "Posts",
-            value: igRes.data.feed?.summary?.total_count || 0 },
+            value: igRes.data.feed?.summary?.total_count || 0,
+          },
         ],
         rawData: { pageId: page.id, pageToken },
       });
@@ -310,7 +312,7 @@ module.exports = router;
 // test manually
 // # 1. Get auth URL (replace TOKEN with your JWT)
 // curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-//   http://localhost:3000/api/connections/meta/auth
+//   https://content-forge-v2.vercel.app/api/connections/meta/auth
 
 // # 2. Test callback manually (after getting code from browser)
-// curl "http://localhost:3000/api/connections/meta/callback?code=XXX&state=USER_ID"
+// curl "https://content-forge-v2.vercel.app/api/connections/meta/callback?code=XXX&state=USER_ID"

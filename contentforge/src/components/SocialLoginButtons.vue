@@ -1,4 +1,5 @@
-<<template>
+<
+<template>
   <div class="social-login" :class="{ 'is-dark': isDark }">
     <div class="divider">
       <span class="divider-line"></span>
@@ -67,7 +68,8 @@ const { isDark } = useTheme();
 const loading = ref(false);
 const provider = ref(null);
 
-const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const apiUrl =
+  import.meta.env.VITE_API_URL || "https://content-forge-v2.vercel.app/api";
 
 function loginWithGoogle() {
   provider.value = "google";
