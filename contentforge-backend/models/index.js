@@ -37,11 +37,8 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: function () {
-        // Only require phone for manual registration (not OAuth)
-        return !this.googleId && !this.facebookId;
+        return !this.googleId;
       },
-      unique: true,
-      sparse: true, // Allows null/undefined values without unique conflict
     },
 
     // 2. صلاحيات الحساب وحالته العامة
@@ -60,7 +57,7 @@ const userSchema = new mongoose.Schema(
       enum: ["free", "pro", "enterprise", ""],
       default: "free",
     },
-      // warningSentAt: { type: Date, default: null },
+    // warningSentAt: { type: Date, default: null },
     subscriptionType: {
       type: String,
       enum: ["monthly", "yearly", "none"],
