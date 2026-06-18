@@ -39,13 +39,13 @@ router.get("/stats/facebook", protect, async (req, res) => {
           access_token: conn.accessToken,
         },
       }),
-      axios.get(`${BASE_URL}/${conn.pageId}/insights`, {
-        params: {
-          metric: "page_impressions_unique,page_actions_post_reactions_total",
-          period: "day",
-          access_token: conn.accessToken,
-        },
-      }),
+      // axios.get(`${BASE_URL}/${conn.pageId}/insights`, {
+      //   params: {
+      //     metric: "page_impressions_unique,page_actions_post_reactions_total",
+      //     period: "day",
+      //     access_token: conn.accessToken,
+      //   },
+      // }),
     ]);
 
     const data = pageRes.data;
@@ -72,7 +72,6 @@ router.get("/stats/facebook", protect, async (req, res) => {
     res.status(500).json({ message: "Failed to fetch Facebook stats" });
   }
 });
-
 // GET /api/posts/stats/instagram — Get live Instagram stats
 router.get("/stats/instagram", protect, async (req, res) => {
   try {
