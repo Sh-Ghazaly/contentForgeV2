@@ -48,6 +48,7 @@
     }
   },
   "auth": {
+    "loggingYouIn": "Logging you in...",
     "connecting": "Connecting...",
     "googleSignIn": "Sign in With Google",
     "facebookSignIn": "Sign in With Facebook",
