@@ -34,7 +34,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
 
     const { data } = await axios.get(`${BASE_URL}/${conn.pageId}`, {
       params: {
-        fields: "name,fan_count,published_posts.limit(1).summary(true)",
+        fields: "name,fan_count,post{id}",
         access_token: conn.accessToken,
       },
     });
