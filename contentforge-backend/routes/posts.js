@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/auth");
-const { User } = require("../models");
+const { User, TopPost } = require("../models");
 const { Post, Brand, Calendar } = require("../models");
 const { generateVariantB } = require("../services/geminiService");
 const { uploadBase64Image } = require("../utils/uploadToCloudinary");
@@ -156,24 +156,50 @@ router.patch("/:id", protect, async (req, res) => {
 });
 
 // POST /api/posts/:id/variant-b — generate A/B variant using Gemini
-router.post("/:id/variant-b", protect, async (req, res) => {
-  const post = await Post.findById(req.params.id).populate("brand");
-  if (!post) return res.status(404).json({ message: "Post not found" });
+router.post("/:id/variant-b", protect, checkPostsLimit, async (req, res) => {
+  try {
+    // 1️⃣ البحث عن المنشور
+    const post = await Post.findById(req.params.id).populate("brand");
+    if (!post) return res.status(404).json({ message: "Post not found" });
 
-  // جلب top posts للـ brand لو موجودة (not required)
-  const { TopPost } = require("../models");
-  const topPosts = await TopPost.find({ brand: post.brand._id })
-    .sort("-stats.engagementRate")
-    .limit(3);
+    // 2️⃣ ✅ التحقق من صلاحيات المستخدم
+    if (post.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized to modify this post" });
+    }
 
-  const variantB = await generateVariantB({
-    post,
-    brand: post.brand,
-    topPosts,
-  });
-  post.variantB = variantB;
-  await post.save();
-  res.json(variantB);
+    // 3️⃣ ✅ التحقق من وجود brand
+    if (!post.brand) {
+      return res.status(400).json({ message: "Post must have a brand" });
+    }
+
+    // 4️⃣ جلب top posts للـ brand (optional)
+      const topPosts = await TopPost.find({ brand: post.brand._id })
+      .sort("-stats.engagementRate")
+      .limit(3);
+
+    // 5️⃣ توليد variant B
+    const variantB = await generateVariantB({
+      post,
+      brand: post.brand,
+      topPosts,
+    });
+
+    // 6️⃣ ✅ حفظ النتيجة
+    post.variantB = variantB;
+    await post.save();
+
+    // 7️⃣ ✅ زيادة الاستخدام بعد النجاح فقط
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { "usage.postsGenerated": 1 },
+    });
+
+    res.json(variantB);
+  } catch (err) {
+    console.error("Variant B generation error:", err);
+    res.status(500).json({ 
+      message: err.message || "Failed to generate variant B" 
+    });
+  }
 });
 
 // POST /api/posts/:id/apply-variant-b — swap A with B
