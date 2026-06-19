@@ -25,15 +25,36 @@ router.get('/google', passport.authenticate('google', {
   session: false 
 }));
 
-router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
-  (req, res) => {
-    const token = signToken(req.user._id);
-    // Redirect to frontend with token
+// router.get('/google/callback',
+//   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
+//   (req, res) => {
+//     const token = signToken(req.user._id);
+//     // Redirect to frontend with token
+//     const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-success?token=${token}&provider=google`;
+//     res.redirect(redirectUrl);
+//   }
+// );
+router.get('/google/callback', (req, res, next) => {
+  // نقوم بتعريف دالة مخصصة للتعامل مع الـ authentication
+  passport.authenticate('google', { session: false }, (err, user, info) => {
+    
+    // 1. إذا حدث خطأ في السيرفر
+    if (err) return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=server_error`);
+    
+    // 2. إذا فشلت المصادقة (بسبب الحظر مثلاً)
+    if (!user) {
+      // نأخذ رسالة الخطأ من الـ passport (info.message) أو نضع رسالة افتراضية
+      const errorMessage = info?.message || 'google_auth_failed';
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=${encodeURIComponent(errorMessage)}`);
+    }
+
+    // 3. إذا نجح الدخول، نكمل العمل كالمعتاد
+    const token = signToken(user._id);
     const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-success?token=${token}&provider=google`;
     res.redirect(redirectUrl);
-  }
-);
+    
+  })(req, res, next);
+});
 
 // ── Facebook OAuth ─────────────────────────────────────────────────────────────
 // router.get('/facebook', passport.authenticate('facebook', { 
