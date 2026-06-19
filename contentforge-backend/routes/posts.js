@@ -38,6 +38,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
         access_token: conn.accessToken,
       },
     });
+    console.log("[Facebook Stats] raw data:", JSON.stringify(data, null, 2)); // ← add this
 
     res.json({
       pageName: data.name,
