@@ -34,7 +34,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
 
     const { data } = await axios.get(`${BASE_URL}/${conn.pageId}`, {
       params: {
-        fields: "name,fan_count,post{id}",
+        fields: "name,fan_count,feed.summary(true)",
         access_token: conn.accessToken,
       },
     });
@@ -42,7 +42,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
     res.json({
       pageName: data.name,
       followers: data.fan_count ?? 0,
-      totalPosts: data.posts?.summary?.total_count ?? 0,
+      totalPosts: data.feed?.summary?.total_count ?? 0,
       likes: Math.floor((data.fan_count ?? 0) * 0.08),
       reach: Math.floor((data.fan_count ?? 0) * 1.3),
     });
