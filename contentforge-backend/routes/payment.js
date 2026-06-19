@@ -47,8 +47,8 @@ router.post("/checkout", protect, async (req, res) => {
     payment_method_types: ["card"],
     mode: "subscription",
     line_items: [{ price: plan.priceId, quantity: 1 }],
-    success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+    success_url: `${process.env.API_BASE_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.API_BASE_URL}/payment/cancel`,
     metadata: { userId: String(user._id), planKey },
     subscription_data: {
       metadata: { userId: String(user._id), planKey },
@@ -66,7 +66,7 @@ router.post("/portal", protect, async (req, res) => {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
-    return_url: `${process.env.CLIENT_URL}/dashboard`,
+    return_url: `${process.env.API_BASE_URL}/dashboard`,
   });
   res.json({ url: session.url });
 });
