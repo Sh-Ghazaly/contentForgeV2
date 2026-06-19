@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/auth");
 const { Trend } = require("../models");
-const { Brand, Calendar, Post, OriginalCalendar } = require("../models");
+const { Brand, Calendar, Post, OriginalCalendar, User } = require("../models");
 const {
   incrementUsage,
   checkCalendarLimit,
