@@ -172,6 +172,44 @@ router.post("/verify-email", async (req, res) => {
   res.json({ message: "Email verified successfully" });
 });
 
+// router.post("/login", async (req, res) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password)
+//     return res.status(400).json({ message: "Email and password required" });
+
+//   const user = await User.findOne({ email });
+
+//   if (!user || !(await user.matchPassword(password)))
+//     return res.status(401).json({ message: "Invalid email or password" });
+
+//   if (!user.isVerified)
+//     return res.status(403).json({ message: "Please verify your email first" });
+
+//   if (user.isBlocked)
+//     return res.status(403).json({
+//       message: "Your account has been blocked. Please contact support.",
+//     });
+
+//   user.lastLoginAt = new Date();
+//   await user.save();
+
+//   const token = signToken(user._id);
+
+//   res.json({
+//     token,
+//     user: {
+//       id: user._id,
+//       name: user.name,
+//       email: user.email,
+//       plan: user.plan,
+//       isAdmin: user.isAdmin,
+//       isTrial: user.isTrial,
+//       planEndsAt: user.planEndsAt,
+//       trialExpired: user.isTrial && user.planEndsAt && new Date() > new Date(user.planEndsAt),
+//     },
+//   });
+// });
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -196,6 +234,31 @@ router.post("/login", async (req, res) => {
 
   const token = signToken(user._id);
 
+  // ← ضيفي الـ checks هنا قبل ما ترجعي الـ token
+  if (user.isBlocked) {
+    return res.status(403).json({
+      success: false,
+      reason: 'blocked',
+      redirectUrl: '/account-suspended'
+    })
+  }
+
+  if (user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt)) {
+    return res.status(403).json({
+      success: false,
+      reason: 'trial_expired',
+      redirectUrl: '/trial-expired'
+    })
+  }
+
+  if (!user.isAdmin && user.planEndsAt && new Date() > new Date(user.planEndsAt)) {
+    return res.status(403).json({
+      success: false,
+      reason: 'subscription_expired',
+      redirectUrl: '/billing'
+    })
+  }
+
   res.json({
     token,
     user: {
@@ -210,7 +273,6 @@ router.post("/login", async (req, res) => {
     },
   });
 });
-
 // router.get("/me", protect, async (req, res) => {
 //   res.json({ recipient: req.user._id, });
 // });
