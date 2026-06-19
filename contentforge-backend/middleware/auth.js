@@ -21,6 +21,14 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'User not found' })
     }
 
+    
+    // 1. التحقق من الحظر (isBlocked)
+    if (req.user.isBlocked) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'تم حظر حسابك، يرجى التواصل مع الدعم الفني.' 
+      });
+    }
     // ----------------------------------------------------
     // الحتة السحرية الجديدة هنا:
     // بنشيك لو الحساب لسه في فترة التجربة (isTrial) والتاريخ الحالي أحدث من تاريخ الانتهاء
@@ -37,6 +45,18 @@ const protect = async (req, res, next) => {
           "Your 14-day free trial has expired. Please subscribe to continue.",
         reason: "trial_expired", // ← أضف ده
         upgradeUrl: "/trial-expired", // ← أضف ده
+      });
+    }
+    if (
+      !req.user.isAdmin && 
+      req.user.planEndsAt && 
+      new Date() > new Date(req.user.planEndsAt)
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "Your subscription has expired. Please renew your plan to continue.",
+        reason: "subscription_expired", 
+        upgradeUrl: "/billing" // توجيه لصفحة الدفع أو تجديد الباقة
       });
     }
     // ----------------------------------------------------
