@@ -148,7 +148,7 @@ router.post("/cancel", protect, async (req, res) => {
     res.json({
       success: true,
       message: "Please use the customer portal to manage your subscription",
-      portalUrl: `${process.env.CLIENT_URL}/billing`,
+      portalUrl: `${process.env.API_BASE_URL}/billing`,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -169,7 +169,7 @@ router.post(
       res.json({
         success: true,
         message: "Redirecting to checkout...",
-        checkoutUrl: `${process.env.CLIENT_URL}/billing?plan=${planKey}`,
+        checkoutUrl: `${process.env.API_BASE_URL}/billing?plan=${planKey}`,
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
