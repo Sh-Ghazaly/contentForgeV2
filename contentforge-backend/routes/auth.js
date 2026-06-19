@@ -34,42 +34,38 @@ router.get('/google', passport.authenticate('google', {
 //     res.redirect(redirectUrl);
 //   }
 // );
-router.get('/google/callback', (req, res, next) => {
-  // نقوم بتعريف دالة مخصصة للتعامل مع الـ authentication
-  passport.authenticate('google', { session: false }, (err, user, info) => {
+// router.get('/google/callback', (req, res, next) => {
+//   // نقوم بتعريف دالة مخصصة للتعامل مع الـ authentication
+//   passport.authenticate('google', { session: false }, (err, user, info) => {
     
-    // 1. إذا حدث خطأ في السيرفر
-    if (err) return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+//     // 1. إذا حدث خطأ في السيرفر
+//     if (err) return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
     
-    // 2. إذا فشلت المصادقة (بسبب الحظر مثلاً)
-    if (!user) {
-      // نأخذ رسالة الخطأ من الـ passport (info.message) أو نضع رسالة افتراضية
-      const errorMessage = info?.message || 'google_auth_failed';
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
-    }
+//     // 2. إذا فشلت المصادقة (بسبب الحظر مثلاً)
+//     if (!user) {
+//       // نأخذ رسالة الخطأ من الـ passport (info.message) أو نضع رسالة افتراضية
+//       const errorMessage = info?.message || 'google_auth_failed';
+//       return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
+//     }
 
-    // 3. إذا نجح الدخول، نكمل العمل كالمعتاد
-    const token = signToken(user._id);
-    const redirectUrl = `${process.env.FRONTEND_URL}/login-success?token=${token}&provider=google`;
-    res.redirect(redirectUrl);
-    
-  })(req, res, next);
-});
-
-// ── Facebook OAuth ─────────────────────────────────────────────────────────────
-// router.get('/facebook', passport.authenticate('facebook', { 
-//   scope: ['email', 'public_profile'],
-//   session: false 
-// }));
-
-// router.get('/facebook/callback',
-//   passport.authenticate('facebook', { session: false, failureRedirect: '/login?error=facebook_auth_failed' }),
-//   (req, res) => {
-//     const token = signToken(req.user._id);
-//     const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-success?token=${token}&provider=facebook`;
+//     // 3. إذا نجح الدخول، نكمل العمل كالمعتاد
+//     const token = signToken(user._id);
+//     const redirectUrl = `${process.env.FRONTEND_URL}/login-success?token=${token}&provider=google`;
 //     res.redirect(redirectUrl);
-//   }
-// );
+    
+//   })(req, res, next);
+// });
+router.get('/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
+  (req, res) => {
+    const token = signToken(req.user._id);
+    // Redirect to frontend with token
+    const redirectUrl = `${process.env.FRONTEND_URL || 'https://content-forge-v2-frontend.vercel.app'}/login-success?token=${token}&provider=google`;
+    res.redirect(redirectUrl);
+  }
+);
+
+
 
 // ── Social Login Success Handler (optional API endpoint) ──────────────────────
 router.post('/social-login', async (req, res) => {
@@ -173,44 +169,6 @@ router.post("/verify-email", async (req, res) => {
   res.json({ message: "Email verified successfully" });
 });
 
-// router.post("/login", async (req, res) => {
-//   const { email, password } = req.body;
-
-//   if (!email || !password)
-//     return res.status(400).json({ message: "Email and password required" });
-
-//   const user = await User.findOne({ email });
-
-//   if (!user || !(await user.matchPassword(password)))
-//     return res.status(401).json({ message: "Invalid email or password" });
-
-//   if (!user.isVerified)
-//     return res.status(403).json({ message: "Please verify your email first" });
-
-//   if (user.isBlocked)
-//     return res.status(403).json({
-//       message: "Your account has been blocked. Please contact support.",
-//     });
-
-//   user.lastLoginAt = new Date();
-//   await user.save();
-
-//   const token = signToken(user._id);
-
-//   res.json({
-//     token,
-//     user: {
-//       id: user._id,
-//       name: user.name,
-//       email: user.email,
-//       plan: user.plan,
-//       isAdmin: user.isAdmin,
-//       isTrial: user.isTrial,
-//       planEndsAt: user.planEndsAt,
-//       trialExpired: user.isTrial && user.planEndsAt && new Date() > new Date(user.planEndsAt),
-//     },
-//   });
-// });
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -307,12 +265,14 @@ router.get("/me", protect, async (req, res) => {
 
 router.get("/notifications", protect, async (req, res) => {
   const user = await User.findById(req.user._id).select(
-    "moderation.blockStatus moderation.restrictionReason moderation.gracePeriodExpiresAt",
+    // "moderation.blockStatus moderation.restrictionReason moderation.gracePeriodExpiresAt",
+    "isBlocked"
   );
 
   const notifs = [];
 
-  if (user.moderation?.blockStatus === "warning") {
+  // if (user.moderation?.blockStatus === "warning") {
+  if(user.isBlocked){
     notifs.push({
       id: "warning-1",
       type: "warning",
