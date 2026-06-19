@@ -8,10 +8,14 @@
       <h1>Your account has been suspended</h1>
       <p class="subtitle">
             Your account has been suspended by the administration. If you believe this is an error, please contact support.      </p>
-      <a href="cforge124@gmail.com" class="action-btn blocked-btn">
+      <!-- <a href="cforge124@gmail.com" class="action-btn blocked-btn">
         <i class="ti ti-mail"></i>
             Contact Support
-      </a>
+      </a> -->
+      <router-link to="/contact" class="action-btn blocked-btn">
+        <i class="ti ti-mail"></i>
+            Contact Support
+      </router-link>
     </div>
 
     <!-- Plan Expired -->
@@ -23,7 +27,7 @@
       <p class="subtitle">
           Your subscription has expired. Please upgrade your plan to continue using ContentForge.
       </p>
-      <router-link to="/PaymentPage" class="action-btn expired-btn">
+      <router-link to="/payment" class="action-btn expired-btn">
         <i class="ti ti-sparkles"></i>
         Renew Subscription
       </router-link>

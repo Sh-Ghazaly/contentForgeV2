@@ -122,7 +122,8 @@ router.post("/register", async (req, res) => {
     ).toString();
 
     const trialDays = settings.trialDays ?? 14;
-    const calculatedExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    // const calculatedExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+        const calculatedExpiry = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
 
     const user = await User.create({
       name,

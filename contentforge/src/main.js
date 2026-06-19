@@ -33,6 +33,12 @@ import AiReelsPage from "./views/AiReelPage.vue";
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: "/account-suspended",
+      name: "AccountSuspended",
+      component: () => import("@/views/AccountSuspended.vue"),
+      meta: { requiresAuth: false },
+    },
     { path: "/", component: LandingPage },
     { path: "/login", component: LoginPage },
     { path: "/login-success", component: LoginSuccessPage },
