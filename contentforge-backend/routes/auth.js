@@ -39,18 +39,18 @@ router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, (err, user, info) => {
     
     // 1. إذا حدث خطأ في السيرفر
-    if (err) return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=server_error`);
+    if (err) return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
     
     // 2. إذا فشلت المصادقة (بسبب الحظر مثلاً)
     if (!user) {
       // نأخذ رسالة الخطأ من الـ passport (info.message) أو نضع رسالة افتراضية
       const errorMessage = info?.message || 'google_auth_failed';
-      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=${encodeURIComponent(errorMessage)}`);
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
     }
 
     // 3. إذا نجح الدخول، نكمل العمل كالمعتاد
     const token = signToken(user._id);
-    const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-success?token=${token}&provider=google`;
+    const redirectUrl = `${process.env.FRONTEND_URL}/login-success?token=${token}&provider=google`;
     res.redirect(redirectUrl);
     
   })(req, res, next);
