@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const protect = require("../middleware/auth");
-const { User } = require("../models");
+const { User, TopPost } = require("../models");
 const { Post, Brand, Calendar } = require("../models");
 const { generateVariantB } = require("../services/geminiService");
 const { uploadBase64Image } = require("../utils/uploadToCloudinary");
@@ -34,7 +34,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
 
     const { data } = await axios.get(`${BASE_URL}/${conn.pageId}`, {
       params: {
-        fields: "name,fan_count,post{id}",
+        fields: "name,fan_count,feed.summary(true)",
         access_token: conn.accessToken,
       },
     });
@@ -43,7 +43,7 @@ router.get("/stats/facebook", protect, async (req, res) => {
     res.json({
       pageName: data.name,
       followers: data.fan_count ?? 0,
-      totalPosts: data.posts?.summary?.total_count ?? 0,
+      totalPosts: data.feed?.summary?.total_count ?? 0,
       likes: Math.floor((data.fan_count ?? 0) * 0.08),
       reach: Math.floor((data.fan_count ?? 0) * 1.3),
     });
@@ -157,12 +157,11 @@ router.patch("/:id", protect, async (req, res) => {
 });
 
 // POST /api/posts/:id/variant-b — generate A/B variant using Gemini
-router.post("/:id/variant-b", protect, async (req, res) => {
+router.post("/:id/variant-b", protect, checkPostsLimit, async (req, res) => {
   const post = await Post.findById(req.params.id).populate("brand");
   if (!post) return res.status(404).json({ message: "Post not found" });
 
   // جلب top posts للـ brand لو موجودة (not required)
-  const { TopPost } = require("../models");
   const topPosts = await TopPost.find({ brand: post.brand._id })
     .sort("-stats.engagementRate")
     .limit(3);
@@ -172,8 +171,15 @@ router.post("/:id/variant-b", protect, async (req, res) => {
     brand: post.brand,
     topPosts,
   });
+
   post.variantB = variantB;
+
   await post.save();
+
+  await User.findByIdAndUpdate(req.user._id, {
+    $inc: { "usage.postsGenerated": 1 },
+  });
+
   res.json(variantB);
 });
 

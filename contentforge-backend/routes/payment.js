@@ -24,6 +24,9 @@ const PLANS = {
 
 // ── POST /api/payment/checkout — create Stripe Checkout session ───────────────
 router.post("/checkout", protect, async (req, res) => {
+  console.log("CLIENT_URL:", process.env.CLIENT_URL); // ✅ أضف هذا السطر
+  console.log("API_BASE_URL:", process.env.API_BASE_URL)
+  
   const { planKey } = req.body;
   const plan = PLANS[planKey];
   if (!plan) return res.status(400).json({ message: "Invalid plan" });
@@ -66,7 +69,7 @@ router.post("/portal", protect, async (req, res) => {
 
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripeCustomerId,
-    return_url: `${process.env.CLIENT_URL}/dashboard`,
+    return_url: `${process.env.API_BASE_URL}/dashboard`,
   });
   res.json({ url: session.url });
 });

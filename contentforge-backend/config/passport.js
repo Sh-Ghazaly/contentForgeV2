@@ -30,6 +30,10 @@ passport.use(
         });
 
         if (user) {
+          if (user.isBlocked) {
+          // نرسل خطأ إلى Passport بأن المستخدم محظور
+          return done(null, false, { message: 'Your account has been blocked. Please contact support.' });
+        }
           if (!user.googleId) {
             user.googleId = profile.id;
             user.avatar = avatar || user.avatar;
