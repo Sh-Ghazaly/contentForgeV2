@@ -24,6 +24,9 @@ const PLANS = {
 
 // ── POST /api/payment/checkout — create Stripe Checkout session ───────────────
 router.post("/checkout", protect, async (req, res) => {
+  console.log("CLIENT_URL:", process.env.CLIENT_URL); // ✅ أضف هذا السطر
+  console.log("API_BASE_URL:", process.env.API_BASE_URL)
+  
   const { planKey } = req.body;
   const plan = PLANS[planKey];
   if (!plan) return res.status(400).json({ message: "Invalid plan" });
@@ -47,8 +50,8 @@ router.post("/checkout", protect, async (req, res) => {
     payment_method_types: ["card"],
     mode: "subscription",
     line_items: [{ price: plan.priceId, quantity: 1 }],
-    success_url: `${process.env.API_BASE_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.API_BASE_URL}/payment/cancel`,
+    success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
     metadata: { userId: String(user._id), planKey },
     subscription_data: {
       metadata: { userId: String(user._id), planKey },
