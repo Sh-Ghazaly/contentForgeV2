@@ -10,7 +10,7 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized — no token provided' })
+    return res.status(401).json({ success: false, message: 'Not authorized — no token provided' })
   }
 
   try {
@@ -18,53 +18,52 @@ const protect = async (req, res, next) => {
     req.user = await User.findById(decoded.id).select('-password')
     
     if (!req.user) {
-      return res.status(401).json({ message: 'User not found' })
+      return res.status(401).json({ success: false, message: 'User not found' })
     }
 
-    
-    // 1. التحقق من الحظر (isBlocked)
+    // 1. حظر
     if (req.user.isBlocked) {
       return res.status(403).json({ 
         success: false, 
-        message: 'تم حظر حسابك، يرجى التواصل مع الدعم الفني.' 
-      });
+        reason: 'blocked',                                    // ← أضفنا reason
+        message: 'تم حظر حسابك، يرجى التواصل مع الدعم الفني.',
+        redirectUrl: '/account-suspended'                     // ← الفرونت يعمل redirect
+      })
     }
-    // ----------------------------------------------------
-    // الحتة السحرية الجديدة هنا:
-    // بنشيك لو الحساب لسه في فترة التجربة (isTrial) والتاريخ الحالي أحدث من تاريخ الانتهاء
+
+    // 2. Trial expired
     if (
-      req.user &&
       !req.user.isAdmin &&
-      req.user.plan === "free" &&
+      req.user.plan === 'free' &&
       req.user.isTrial &&
       Date.now() > new Date(req.user.planEndsAt)
     ) {
       return res.status(403).json({
         success: false,
-        message:
-          "Your 14-day free trial has expired. Please subscribe to continue.",
-        reason: "trial_expired", // ← أضف ده
-        upgradeUrl: "/trial-expired", // ← أضف ده
-      });
+        reason: 'trial_expired',
+        message: 'Your free trial has expired. Please subscribe to continue.',
+        redirectUrl: '/trial-expired'
+      })
     }
+
+    // 3. Subscription expired
     if (
-      !req.user.isAdmin && 
-      req.user.planEndsAt && 
+      !req.user.isAdmin &&
+      req.user.planEndsAt &&
       new Date() > new Date(req.user.planEndsAt)
     ) {
       return res.status(403).json({
         success: false,
-        message: "Your subscription has expired. Please renew your plan to continue.",
-        reason: "subscription_expired", 
-        upgradeUrl: "/billing" // توجيه لصفحة الدفع أو تجديد الباقة
-      });
+        reason: 'subscription_expired',
+        message: 'Your subscription has expired. Please renew your plan to continue.',
+        redirectUrl: '/billing'
+      })
     }
-    // ----------------------------------------------------
 
     next()
   } catch (err) {
-    return res.status(401).json({ message: 'Not authorized — invalid or expired token' })
+    return res.status(401).json({ success: false, message: 'Not authorized — invalid or expired token' })
   }
 }
 
-module.exports = protect // متنساش تعملها export لو مش معمولة
+module.exports = protect  
