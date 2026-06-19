@@ -157,49 +157,29 @@ router.patch("/:id", protect, async (req, res) => {
 
 // POST /api/posts/:id/variant-b — generate A/B variant using Gemini
 router.post("/:id/variant-b", protect, checkPostsLimit, async (req, res) => {
-  try {
-    // 1️⃣ البحث عن المنشور
-    const post = await Post.findById(req.params.id).populate("brand");
-    if (!post) return res.status(404).json({ message: "Post not found" });
+  const post = await Post.findById(req.params.id).populate("brand");
+  if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // 2️⃣ ✅ التحقق من صلاحيات المستخدم
-    if (post.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized to modify this post" });
-    }
+  // جلب top posts للـ brand لو موجودة (not required)
+  const topPosts = await TopPost.find({ brand: post.brand._id })
+    .sort("-stats.engagementRate")
+    .limit(3);
 
-    // 3️⃣ ✅ التحقق من وجود brand
-    if (!post.brand) {
-      return res.status(400).json({ message: "Post must have a brand" });
-    }
+  const variantB = await generateVariantB({
+    post,
+    brand: post.brand,
+    topPosts,
+  });
 
-    // 4️⃣ جلب top posts للـ brand (optional)
-      const topPosts = await TopPost.find({ brand: post.brand._id })
-      .sort("-stats.engagementRate")
-      .limit(3);
+  post.variantB = variantB;
 
-    // 5️⃣ توليد variant B
-    const variantB = await generateVariantB({
-      post,
-      brand: post.brand,
-      topPosts,
-    });
+  await post.save();
 
-    // 6️⃣ ✅ حفظ النتيجة
-    post.variantB = variantB;
-    await post.save();
+  await User.findByIdAndUpdate(req.user._id, {
+    $inc: { "usage.postsGenerated": 1 },
+  });
 
-    // 7️⃣ ✅ زيادة الاستخدام بعد النجاح فقط
-    await User.findByIdAndUpdate(req.user._id, {
-      $inc: { "usage.postsGenerated": 1 },
-    });
-
-    res.json(variantB);
-  } catch (err) {
-    console.error("Variant B generation error:", err);
-    res.status(500).json({ 
-      message: err.message || "Failed to generate variant B" 
-    });
-  }
+  res.json(variantB);
 });
 
 // POST /api/posts/:id/apply-variant-b — swap A with B
