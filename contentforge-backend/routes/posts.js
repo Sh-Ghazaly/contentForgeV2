@@ -43,7 +43,7 @@ res.json({
   pageName: data.name,
   followers: data.fan_count ?? 0,
   totalPosts: data.feed?.data?.length ?? 0,
-  likes: Math.floor((data.fan_count ?? 0) * 0.08) || 3,
+  likes: data.fan_count ?? 0,
   reach: Math.floor((data.fan_count ?? 0) * 1.3) || 6,
 });
   } catch (err) {
