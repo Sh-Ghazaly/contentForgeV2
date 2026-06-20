@@ -37,13 +37,23 @@
       const reason = data?.reason;
       const upgradeUrl = data?.upgradeUrl;
 
-      if (status === 401) {
-        localStorage.removeItem("cf_token");
-        localStorage.removeItem("cf_user");
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
-        }
+      // if (status === 401) {
+      //   localStorage.removeItem("cf_token");
+      //   localStorage.removeItem("cf_user");
+      //   if (window.location.pathname !== "/login") {
+      //     window.location.href = "/login";
+      //   }
+      // }
+        if (status === 401) {
+      localStorage.removeItem("cf_token");
+      localStorage.removeItem("cf_user");
+
+      // ✅ استثناء صفحات مش محتاجة token
+      const exemptPaths = ["/login", "/trial-expired", "/account-suspended"];
+      if (!exemptPaths.includes(window.location.pathname)) {
+        window.location.href = "/login";
       }
+    
 
       if (status === 403) {
         const currentPath = window.location.pathname;
