@@ -396,6 +396,8 @@ const handlePaidPlanClick = async (event, planKey) => {
 
   if (isButtonDisabled(planKey)) return;
 
+  sessionStorage.setItem('beforeCheckout', router.currentRoute.value.fullPath);
+  
   checkoutLoading.value = planKey;
   errorMsg.value = "";
 
