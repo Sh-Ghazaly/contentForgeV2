@@ -125,13 +125,9 @@ async function generateBackground(prompt, width = 1024, height = 1024) {
   }
 }
 
-// ── 4. دمج الشعار الأصلي فوق البوستر المولد باستخدام Sharp ──
-async function compositeLogo(backgroundBuffer, originalLogoPath, outputDir) {
+// ── 4. دمج الشعار الأصلي فوق البوستر المولد باستخدام Sharp (In-Memory) ──
+async function compositeLogo(backgroundBuffer, originalLogoPath) {
   try {
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
     let logoBuffer = fs.readFileSync(originalLogoPath);
 
     // ✨ الخطوة الجديدة: محاولة إزالة الخلفية تلقائياً
@@ -145,9 +141,8 @@ async function compositeLogo(backgroundBuffer, originalLogoPath, outputDir) {
       .resize(logoResizeWidth, null, { fit: "inside" })
       .toBuffer();
 
-    const finalImagePath = path.join(outputDir, `poster-${Date.now()}.png`);
-
-    await sharp(backgroundBuffer)
+    // ✅ توليد الصورة النهائية في الذاكرة (Buffer) بدلاً من حفظها في الملفات
+    const finalImageBuffer = await sharp(backgroundBuffer)
       .composite([
         {
           input: processedLogo,
@@ -156,14 +151,15 @@ async function compositeLogo(backgroundBuffer, originalLogoPath, outputDir) {
           left: 35, // offset من اليمين لليسار
         },
       ])
-      .png({ quality: 90 })
-      .toFile(finalImagePath);
+      .png()
+      .toBuffer(); // ✅ استخدمنا toBuffer بدلاً من toFile
 
-    console.log(
-      "[PosterService] Logo composited successfully at:",
-      finalImagePath,
-    );
-    return finalImagePath;
+    console.log("[PosterService] Logo composited successfully in memory!");
+    
+    // ✅ تحويل الـ Buffer إلى Base64 Data URL
+    const base64 = finalImageBuffer.toString('base64');
+    return `data:image/png;base64,${base64}`;
+    
   } catch (error) {
     console.error("[PosterService] Sharp Compositing Error:", error);
     throw new Error("فشل في دمج الشعار مع البوستر.");
@@ -171,25 +167,18 @@ async function compositeLogo(backgroundBuffer, originalLogoPath, outputDir) {
 }
 
 // ── الدالة الرئيسية التي يستدعيها الـ Controller ─────────────
+// ── الدالة الرئيسية التي يستدعيها الـ Controller ─────────────
 async function generatePoster(imagePath, userPrompt) {
   console.log("[PosterService] Starting poster generation pipeline...");
 
   const prompt = await buildPosterPrompt(imagePath, userPrompt);
   const backgroundBuffer = await generateBackground(prompt, 1024, 1024);
 
-  const outputDir = path.join(__dirname, "..", "uploads", "posters");
-  const finalImagePath = await compositeLogo(
-    backgroundBuffer,
-    imagePath,
-    outputDir,
-  );
-
-  const baseUrl =
-    process.env.API_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
-  const fullUrl = `${baseUrl}/uploads/posters/${path.basename(finalImagePath)}`;
+  // ✅ لم نعد بحاجة إلى outputDir، الدالة ستعيد Base64 مباشرة
+  const imageUrl = await compositeLogo(backgroundBuffer, imagePath);
 
   return {
-    imageUrl: fullUrl, // ✅ الرابط الكامل
+    imageUrl: imageUrl, // ✅ Base64 Data URL (جاهز للحفظ في قاعدة البيانات)
     prompt: prompt,
   };
 }
