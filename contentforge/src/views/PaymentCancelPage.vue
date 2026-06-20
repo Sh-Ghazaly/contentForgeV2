@@ -50,11 +50,13 @@
         </div>        
 
         <div class="flex flex-col">
-          <button @click="goBack"
-            class="w-full px-6 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20">
-            {{ t('common.back') || 'Back' }}
-          </button>
-        </div>
+  <button 
+    @click="goBack"
+    class="w-full px-6 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-600/20"
+  >
+    {{ t('common.done', 'Done') }}
+  </button>
+</div>
 
         <p class="text-xs theme-muted">
           {{ t('payment.needHelp') }}
@@ -80,38 +82,20 @@ const { switchLang } = useLang()
 const { isDark, toggle: toggleTheme } = useTheme()
 
 const goBack = () => {
-  // ✅ جرب ترجع للصفحة اللي كنت فيها قبل الـ checkout
-  const beforeCheckout = sessionStorage.getItem('beforeCheckout');
-  
-  if (beforeCheckout) {
-    sessionStorage.removeItem('beforeCheckout'); // امسحها بعد الاستخدام
-    router.push(beforeCheckout);
-    return;
-  }
+  // ✅ Clean up any leftover checkout data
+  sessionStorage.removeItem('beforeCheckout');
 
-  // ✅ لو مفيش صفحة محفوظة، استخدم router.back()
-  if (window.history.length > 1) {
-    router.back();
-    return;
-  }
-
-  // ✅ كـ fallback، روح للصفحة الرئيسية
-  const token = localStorage.getItem('cf_token');
+  // ✅ Get user data
   const userStr = localStorage.getItem('cf_user');
   const user = userStr ? JSON.parse(userStr) : {};
 
-  if (token) {
-    if (user?.isAdmin) {
-      router.push('/admin');
-      return;
-    }
-    if (user?.trialExpired) {
-      router.push('/trial-expired');
-      return;
-    }
-    router.push('/dashboard');
-  } else {
-    router.push('/login');
+  // 1. If trial is expired, send to trial-expired page
+  if (user?.trialExpired) {
+    router.push('/trial-expired');
+    return;
   }
+
+  // 2. Otherwise, send straight to dashboard
+  router.push('/dashboard');
 };
 </script>
