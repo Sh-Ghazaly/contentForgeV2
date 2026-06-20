@@ -48,6 +48,12 @@
       if (status === 403) {
         const currentPath = window.location.pathname;
 
+        if (reason === "blocked" ) {
+        localStorage.removeItem("cf_token");
+        localStorage.removeItem("cf_user");
+        window.location.href = "/account-suspended?reason=blocked";
+        return Promise.reject({ status, message, reason });
+      }
         // ✅ حالة 1: Trial Expired → توجيه إجباري (مش modal!)
         // لأن المستخدم لم يعد قادراً على استخدام الموقع أصلاً
         if (reason === "trial_expired") {
