@@ -801,6 +801,8 @@
     "downgrade": "Downgrade to Free",
     "cancelsAtEnd": "Cancels at period end",
     "accessUntil": "Access until",
+    "switchToAnnual": "Switch to Annual",
+    "switchToMonthly": "Switch to Monthly",
     "plans": {
       "free": {
         "name": "Free",
