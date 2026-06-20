@@ -16,4 +16,9 @@ export default {
   async cancel() {
     return await api.post("/subscription/cancel");
   },
+  
+  async getStatus() {
+    const { data } = await api.get("/payment/status");
+    return data;
+  },
 };

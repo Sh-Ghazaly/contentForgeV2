@@ -80,27 +80,38 @@ const { switchLang } = useLang()
 const { isDark, toggle: toggleTheme } = useTheme()
 
 const goBack = () => {
-  const token = localStorage.getItem('cf_token')
-  const userStr = localStorage.getItem('cf_user')
-  const user = userStr ? JSON.parse(userStr) : {}
+  // ✅ جرب ترجع للصفحة اللي كنت فيها قبل الـ checkout
+  const beforeCheckout = sessionStorage.getItem('beforeCheckout');
+  
+  if (beforeCheckout) {
+    sessionStorage.removeItem('beforeCheckout'); // امسحها بعد الاستخدام
+    router.push(beforeCheckout);
+    return;
+  }
+
+  // ✅ لو مفيش صفحة محفوظة، استخدم router.back()
+  if (window.history.length > 1) {
+    router.back();
+    return;
+  }
+
+  // ✅ كـ fallback، روح للصفحة الرئيسية
+  const token = localStorage.getItem('cf_token');
+  const userStr = localStorage.getItem('cf_user');
+  const user = userStr ? JSON.parse(userStr) : {};
 
   if (token) {
-    // 🌟 1. Admins have no expiration. Check this FIRST to guarantee correct routing.
     if (user?.isAdmin) {
-      router.push('/admin')
-      return
+      router.push('/admin');
+      return;
     }
-
-    // 🌟 2. If a regular user's trial is expired, send them back to the trial expired page
     if (user?.trialExpired) {
-      router.push('/trial-expired')
-      return
+      router.push('/trial-expired');
+      return;
     }
-
-    // 🌟 3. Normal active logged-in user: send to payment page to view status or try again
-    router.push('/payment')
+    router.push('/dashboard');
   } else {
-    router.push('/login')
+    router.push('/login');
   }
-}
+};
 </script>

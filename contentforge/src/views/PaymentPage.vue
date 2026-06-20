@@ -9,34 +9,36 @@
       <div class="rounded-2xl theme-surface theme-border p-6">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div>
-  <p class="text-xs theme-muted mb-1">
-    {{ t("payment.currentPlan") }}
-  </p>
-  <div class="flex items-center gap-2">
-    <span class="text-xl font-bold theme-text capitalize">{{ planLabel }}</span>
-    
-    <!-- ✅ Badge للإلغاء المجدول -->
-    <span 
-      v-if="subscription?.cancelAtPeriodEnd"
-      class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 font-medium"
-    >
-      {{ t("payment.cancelsAtEnd") || "Cancels at period end" }}
-    </span>
-  </div>
-  
-  <p
-    v-if="subscription?.currentPeriodEnd"
-    class="text-xs theme-muted mt-1.5"
-  >
-    <template v-if="subscription.cancelAtPeriodEnd">
-      {{ t("payment.accessUntil") || "Access until" }}
-    </template>
-    <template v-else>
-      {{ t("payment.renewsOn") || "Renews on" }}
-    </template>
-    {{ formatDate(subscription.currentPeriodEnd) }}
-  </p>
-</div>
+            <p class="text-xs theme-muted mb-1">
+              {{ t("payment.currentPlan") }}
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="text-xl font-bold theme-text capitalize">{{
+                planLabel
+              }}</span>
+
+              <!-- ✅ Badge للإلغاء المجدول -->
+              <span
+                v-if="subscription?.cancelAtPeriodEnd"
+                class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20 font-medium"
+              >
+                {{ t("payment.cancelsAtEnd") || "Cancels at period end" }}
+              </span>
+            </div>
+
+            <p
+              v-if="subscription?.currentPeriodEnd"
+              class="text-xs theme-muted mt-1.5"
+            >
+              <template v-if="subscription.cancelAtPeriodEnd">
+                {{ t("payment.accessUntil") || "Access until" }}
+              </template>
+              <template v-else>
+                {{ t("payment.renewsOn") || "Renews on" }}
+              </template>
+              {{ formatDate(subscription.currentPeriodEnd) }}
+            </p>
+          </div>
           <div
             v-if="subscription?.card"
             class="flex items-center gap-3 px-4 py-3 rounded-xl theme-card theme-border"
@@ -291,47 +293,56 @@
           </ul>
 
           <button
-  @click="subscribe(plan.key)"
-  :disabled="currentPlan === plan.key || checkoutLoading === plan.key"
-  class="w-full py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-  :class="[
-    currentPlan === plan.key && plan.key !== 'free'
-      ? 'bg-green-600/20 text-green-400 border border-green-500/30'
-      : 'bg-blue-600 text-white hover:bg-blue-500'
-  ]"
->
-  <svg
-    v-if="checkoutLoading === plan.key"
-    class="w-4 h-4 animate-spin inline mr-2"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle
-      class="opacity-25"
-      cx="12"
-      cy="12"
-      r="10"
-      stroke="currentColor"
-      stroke-width="4"
-    />
-    <path
-      class="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-    />
-  </svg>
-  
-  <!-- ✅ عرض نص مختلف حسب الحالة -->
-  <template v-if="currentPlan === plan.key && plan.key !== 'free'">
-    ✓ {{ t("pricing.currentPlan") || "Current Plan" }}
-  </template>
-  <template v-else-if="plan.key === 'free' && currentPlan !== 'free'">
-    {{ t("pricing.downgrade") || "Downgrade" }}
-  </template>
-  <template v-else>
-    {{ plan.cta }}
-  </template>
-</button>
+            @click="subscribe(plan.key)"
+            :disabled="isButtonDisabled(plan.key)"
+            class="w-full py-2.5 rounded-xl text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            :class="[
+              isExactCurrentPlan(plan.key)
+                ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-500',
+            ]"
+          >
+            <!-- ✅ أيقونة ✓ لو دي الخطة الحالية -->
+            <svg
+              v-if="isExactCurrentPlan(plan.key)"
+              class="w-4 h-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+
+            <!-- ✅ Spinner لو بيحمل -->
+            <svg
+              v-else-if="checkoutLoading === plan.key"
+              class="w-4 h-4 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+
+            <!-- ✅ النص حسب الحالة -->
+            {{ getButtonText(plan.key) }}
+          </button>
         </div>
       </div>
 
@@ -366,7 +377,9 @@ const checkoutLoading = ref(null);
 const portalLoading = ref(false);
 const errorMsg = ref("");
 
-// ✅ أضف الـ state ده:
+// ✅ نوع الاشتراك الحالي (monthly/yearly)
+const userBilling = ref(null);
+
 const usage = ref({
   aiImagesGenerated: 0,
   postsGenerated: 0,
@@ -430,12 +443,70 @@ const plans = computed(() => [
   },
 ]);
 
+// ── ✅ دوال تحديد حالة الاشتراك ──────────────────────────────────────────────
+
+// دالة تحدد هل دي نفس الخطة ونفس نوع الاشتراك بالظبط
+const isExactCurrentPlan = (planKey) => {
+  // لو مفيش اشتراك نشط، الخطة الحالية هي free
+  if (currentPlan.value === "free") {
+    return planKey === "free";
+  }
+
+  // لو نفس اسم الخطة
+  if (currentPlan.value !== planKey) return false;
+
+  // لو الخطة free، دايماً current
+  if (planKey === "free") return true;
+
+  // نفس نوع الاشتراك (annual vs monthly)
+  const selectedBilling = annual.value ? "yearly" : "monthly";
+  return userBilling.value === selectedBilling;
+};
+
+// دالة تحدد هل الزرار لازم يبقى disabled
+const isButtonDisabled = (planKey) => {
+  if (checkoutLoading.value === planKey) return true;
+  return isExactCurrentPlan(planKey);
+};
+
+// دالة ترجع نص الزرار حسب الحالة
+const getButtonText = (planKey) => {
+  if (checkoutLoading.value === planKey) return "";
+
+  // لو نفس الخطة ونفس نوع الاشتراك
+  if (isExactCurrentPlan(planKey)) {
+    return t("pricing.currentPlan", "Current Plan");
+  }
+
+  // لو نفس الخطة بس نوع اشتراك مختلف (Pro Monthly → Pro Annual)
+  if (currentPlan.value === planKey && planKey !== "free") {
+    return annual.value
+      ? t("pricing.switchToAnnual", "Switch to Annual")
+      : t("pricing.switchToMonthly", "Switch to Monthly");
+  }
+
+  // لو نازل من خطة أعلى (Enterprise → Pro)
+  if (planKey === "free" && currentPlan.value !== "free") {
+    return t("pricing.downgrade", "Downgrade");
+  }
+
+  // الحالة العادية
+  const plan = plans.value.find((p) => p.key === planKey);
+  return plan?.cta || t("pricing.tryNow", "Try Now");
+};
+
 // ── Computed ──────────────────────────────────────────────────────────────────
 const usagePercentage = computed(() => {
   return {
-    aiImages: Math.round((usage.value.aiImagesGenerated / limits.value.maxAiImagesPerMonth) * 100),
-    posts: Math.round((usage.value.postsGenerated / limits.value.maxPostsPerCalendar) * 100),
-    calendars: Math.round((usage.value.calendarsCreated / limits.value.maxCalendarsPerMonth) * 100),
+    aiImages: Math.round(
+      (usage.value.aiImagesGenerated / limits.value.maxAiImagesPerMonth) * 100
+    ),
+    posts: Math.round(
+      (usage.value.postsGenerated / limits.value.maxPostsPerCalendar) * 100
+    ),
+    calendars: Math.round(
+      (usage.value.calendarsCreated / limits.value.maxCalendarsPerMonth) * 100
+    ),
   };
 });
 
@@ -454,18 +525,17 @@ const toggleKnobClass = computed(() => {
 const planLabel = computed(() => {
   const map = {
     free: "Free",
-    pro: "pro",
-    enterprise: "enterprise",
+    pro: "Pro",
+    enterprise: "Enterprise",
   };
   return map[currentPlan.value] || currentPlan.value;
 });
 
 const statusLabel = computed(() => {
-  // لو الخطة pro أو enterprise، اعرض "Active" مش "Free"
-  if (currentPlan.value === 'pro' || currentPlan.value === 'enterprise') {
+  if (currentPlan.value === "pro" || currentPlan.value === "enterprise") {
     return t("payment.statusActive");
   }
-  
+
   const map = {
     active: t("payment.statusActive"),
     trialing: t("payment.statusTrial"),
@@ -497,24 +567,26 @@ function formatDate(iso) {
 }
 
 async function subscribe(planKey) {
-  // If clicking the free plan card, re-route to login instead of checkout
   if (planKey === "free") {
-    router.push("/login"); // Adjust route destination if your login path differs
+    router.push("/login");
     return;
   }
 
-  if (currentPlan.value === planKey) return;
+  if (isButtonDisabled(planKey)) return;
+
+  // ✅ حفظ الصفحة الحالية قبل الـ checkout
+  sessionStorage.setItem("beforeCheckout", router.currentRoute.value.fullPath);
+
   checkoutLoading.value = planKey;
   errorMsg.value = "";
+
   try {
     const key = annual.value ? `${planKey}_annual` : `${planKey}_monthly`;
-
-    // Tag origin parameter context
     const url = await paymentApi.checkout(key, { from: "payment" });
-
     window.location.href = url;
   } catch (e) {
     errorMsg.value = e.message || t("payment.errorGeneric");
+    sessionStorage.removeItem("beforeCheckout"); // ✅ امسحها لو حصل خطأ
   } finally {
     checkoutLoading.value = null;
   }
@@ -539,11 +611,22 @@ async function loadStatus() {
       paymentApi.getStatus(),
       subscriptionApi.getUsage(),
     ]);
-    
+
     currentPlan.value = paymentData.plan;
     subStatus.value = paymentData.status;
     subscription.value = paymentData.subscription;
-    
+
+    // ✅ تحديد نوع الاشتراك الحالي (monthly/yearly)
+    userBilling.value =
+      paymentData.subscription?.interval === "year" ? "yearly" : "monthly";
+
+    console.log(
+      "✅ User Plan:",
+      currentPlan.value,
+      "Billing:",
+      userBilling.value
+    );
+
     if (usageData.success) {
       usage.value = usageData.usage;
       limits.value = usageData.limits;

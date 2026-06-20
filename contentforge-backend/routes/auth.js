@@ -55,16 +55,36 @@ router.get('/google', passport.authenticate('google', {
     
 //   })(req, res, next);
 // });
+// router.get('/google/callback',
+//   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
+//   (req, res) => {
+//     const token = signToken(req.user._id);
+//     // Redirect to frontend with token
+//     const redirectUrl = `${process.env.FRONTEND_URL || 'https://content-forge-v2-frontend.vercel.app'}/login-success?token=${token}&provider=google`;
+//     res.redirect(redirectUrl);
+//   }
+// );
 router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
   (req, res) => {
-    const token = signToken(req.user._id);
-    // Redirect to frontend with token
-    const redirectUrl = `${process.env.FRONTEND_URL || 'https://content-forge-v2-frontend.vercel.app'}/login-success?token=${token}&provider=google`;
-    res.redirect(redirectUrl);
-  }
-);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
 
+    if (req.user.isBlocked || req.user.moderation?.blockStatus === 'blocked') {
+      return res.redirect(`${frontendUrl}/account-suspended?reason=blocked`)
+    }
+
+    if (!req.user.isAdmin && req.user.isTrial && req.user.planEndsAt && new Date() > new Date(req.user.planEndsAt)) {
+      return res.redirect(`${frontendUrl}/trial-expired`)
+    }
+
+    if (!req.user.isAdmin && !req.user.isTrial && req.user.planEndsAt && new Date() > new Date(req.user.planEndsAt)) {
+      return res.redirect(`${frontendUrl}/account-suspended?reason=plan_expired`)
+    }
+
+    const token = signToken(req.user._id)
+    res.redirect(`${frontendUrl}/login-success?token=${token}&provider=google`)
+  }
+)
 
 
 // ── Social Login Success Handler (optional API endpoint) ──────────────────────
@@ -183,10 +203,12 @@ router.post("/login", async (req, res) => {
   if (!user.isVerified)
     return res.status(403).json({ message: "Please verify your email first" });
 
-  if (user.isBlocked)
-    return res.status(403).json({
-      message: "Your account has been blocked. Please contact support.",
-    });
+  if (user.isBlocked || user.moderation?.blockStatus === 'blocked')
+  return res.status(403).json({
+    success: false,
+    message: "Your account has been blocked. Please contact support.",
+    reason: 'blocked'  // ← مهم عشان الـ client.js interceptor يشتغل
+  });
 
   user.lastLoginAt = new Date();
   await user.save();

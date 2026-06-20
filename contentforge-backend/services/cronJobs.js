@@ -55,4 +55,37 @@ async function checkAndSendExpiryWarnings() {
   }
 }
 
-module.exports = { checkAndSendExpiryWarnings };
+async function autoBlockWarnedUsers() {
+  try {
+    const now = new Date();
+
+    // دور على اليوزرز اللي warning وخلص الـ grace period
+    const usersToBlock = await User.find({
+      'moderation.blockStatus': 'warning',
+      'moderation.gracePeriodExpiresAt': { $lte: now },
+      isAdmin: { $ne: true },
+      'deletionRequest.isDeleted': { $ne: true },
+    });
+
+    if (usersToBlock.length === 0) {
+      console.log('[Cron Job] لا يوجد مستخدمين لحظرهم تلقائياً.');
+      return;
+    }
+
+    console.log(`🔒 [Cron Job] جاري حظر ${usersToBlock.length} مستخدم تلقائياً...`);
+
+    for (const user of usersToBlock) {
+      user.isBlocked = true;
+      user.moderation.blockStatus = 'blocked';
+      await user.save();
+
+      console.log(`🚫 تم حظر: ${user.email}`);
+    }
+
+    console.log('[Cron Job] تم الحظر التلقائي بنجاح.');
+  } catch (error) {
+    console.error('خطأ في الحظر التلقائي:', error.message);
+  }
+}
+
+module.exports = { checkAndSendExpiryWarnings, autoBlockWarnedUsers };

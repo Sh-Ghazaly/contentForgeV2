@@ -476,7 +476,7 @@ router.post("/", protect, checkPostsLimit, async (req, res) => {
   try {
     const {
       brand,
-      calendar, // المعرف القادم من الفرونت إند
+      calendar,
       dialect,
       platform,
       copyAR,
@@ -500,7 +500,7 @@ router.post("/", protect, checkPostsLimit, async (req, res) => {
     // 1. إنشاء البوست وحفظه
     const newPost = new Post({
       brand,
-      calendar, // حفظ الكالندر داخل البوست
+      calendar,
       dialect: dialect || "Egyptian Arabic",
       platform: platform || "Instagram",
       copyAR: copyAR || "",
@@ -513,23 +513,36 @@ router.post("/", protect, checkPostsLimit, async (req, res) => {
 
     await newPost.save();
 
-    // 2. 🔥 الخطوة السحرية الناقصة: تحديث وثيقة الكالندر وإضافة البوست الجديد لها
+    // 2. 🔥 الخطوة السحرية: تحديث الكالندر
     if (calendar) {
-      await Calendar.findByIdAndUpdate(
-        calendar,
-        { $push: { posts: newPost._id } }, // عمل Push لمعرف البوست داخل الكالندر
-      );
-      console.log(
-        `[Calendar] Linked post ${newPost._id} to calendar ${calendar}`,
-      );
+      const calendarDoc = await Calendar.findById(calendar);
+      
+      if (calendarDoc) {
+        // ✅ تحقق لو تاريخ البوست أكبر من endDate للـ calendar
+        if (dateObj > calendarDoc.endDate) {
+          calendarDoc.endDate = dateObj;
+          console.log(
+            `[Calendar] Extended endDate to ${dateStr} for calendar ${calendar}`
+          );
+        }
+        
+        // ✅ أضف البوست للـ calendar
+        calendarDoc.posts.push(newPost._id);
+        await calendarDoc.save();
+        
+        console.log(
+          `[Calendar] Linked post ${newPost._id} to calendar ${calendar}`
+        );
+      }
     }
 
     console.log(`[Posts] Created new post successfully: ${newPost._id}`);
 
-    // ✅ تحديث الـ usage مباشرة (بدون middleware)
+    // ✅ تحديث الـ usage
     await User.findByIdAndUpdate(req.user._id, {
       $inc: { "usage.postsGenerated": 1 },
     });
+    
     res.status(201).json(newPost);
   } catch (err) {
     console.error("[Posts Create] Error:", err.message);

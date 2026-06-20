@@ -494,6 +494,13 @@
     "statusApproved": "Approved",
     "statusScheduled": "Scheduled",
     "statusPublished": "Published",
+    "postUpdated": "Post updated successfully",
+    "postDeleted": "Post deleted successfully",
+    "postPublished": "Post published successfully",
+    "saveFailed": "Failed to save changes",
+    "calendarExtended": "Calendar extended to include new post date",
+    "postAdded": "Post added successfully",
+    "addPostError": "Failed to add post. Please try again.",
     "day": {
       "mon": "Mon",
       "tue": "Tue",
@@ -801,6 +808,8 @@
     "downgrade": "Downgrade to Free",
     "cancelsAtEnd": "Cancels at period end",
     "accessUntil": "Access until",
+    "switchToAnnual": "Switch to Annual",
+    "switchToMonthly": "Switch to Monthly",
     "plans": {
       "free": {
         "name": "Free",
@@ -1502,5 +1511,18 @@
     "infoMessage": "Upgrade your plan or resubscribe to continue using all features without limits.",
     "upgradePlan": "Upgrade Plan",
     "resubscribe": "Resubscribe"
-  }
+  },
+  "suspended": {
+  "blocked": {
+    "title": "Account Suspended",
+    "subtitle": "Your account has been suspended by the administration. If you believe this is an error, please contact support.",
+    "cta": "Contact Support"
+  },
+  "expired": {
+    "title": "Subscription Expired",
+    "subtitle": "Your subscription has expired. Please upgrade your plan to continue using ContentForge.",
+    "cta": "Renew Subscription"
+  },
+  "logout": "Log out"
+}
 }

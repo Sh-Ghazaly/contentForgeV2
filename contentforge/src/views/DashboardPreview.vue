@@ -2141,18 +2141,16 @@ async function createPost() {
   if (!newPost.value.copyAR || !newPost.value.scheduledDate) return;
   addingPost.value = true;
   addPostError.value = "";
+  
   try {
     const hashtags = newPost.value.hashtagsInput
       .split(/\s+/)
       .map((h) => h.replace("#", ""))
       .filter(Boolean);
-    console.log(
-      "Current Calendar ID:",
-      currentCalendar.value?._id || currentCalendar.value?.id,
-    );
+      
     const payload = {
       brand: brandId.value,
-      calendar: currentCalendar.value?._id || currentCalendar.value?.id, // نضمن إرسال الـ ID صح
+      calendar: currentCalendar.value?._id || currentCalendar.value?.id,
       dialect: newPost.value.dialect,
       platform: newPost.value.platform,
       scheduledDate: new Date(newPost.value.scheduledDate).toISOString(),
@@ -2174,22 +2172,28 @@ async function createPost() {
       created.date = new Date(raw).toISOString().split("T")[0];
     }
 
-    // ✅ الحل الصحيح 1: تحديث الـ Store الرئيسي المسؤول عن عرض الكالندر بالـ Spread Operator
+    // ✅ تحديث الـ Store بالـ post الجديد
     if (store.posts) {
       store.posts = [...store.posts, created];
     } else {
       store.posts = [created];
     }
 
-    // ✅ الحل الصحيح 2: تحديث مصفوفة الـ posts داخل الـ currentCalendar لضمان المزامنة
+    // ✅ تحديث currentCalendar.posts
     if (currentCalendar.value) {
       if (!currentCalendar.value.posts) currentCalendar.value.posts = [];
       currentCalendar.value.posts.push(created);
-    }
-
-    // ✅ الحل الصحيح 3: إعادة بناء الأسابيع بناءً على الـ Store المحدث بالكامل
-    if (typeof buildWeeks === "function") {
-      calendarWeeks.value = buildWeeks(store.posts);
+      
+      // 🔥 تحديث endDate لو تاريخ البوست أكبر
+      const postDate = new Date(payload.scheduledDate);
+      const currentEndDate = new Date(currentCalendar.value.endDate);
+      
+      if (postDate > currentEndDate) {
+        currentCalendar.value.endDate = payload.scheduledDate;
+        console.log(
+          `[Frontend] Extended calendar endDate to ${payload.scheduledDate}`
+        );
+      }
     }
 
     showAddPostModal.value = false;
