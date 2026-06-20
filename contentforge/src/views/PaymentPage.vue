@@ -299,6 +299,8 @@
             :class="[
               isExactCurrentPlan(plan.key)
                 ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-not-allowed'
+                : isUnavailable(plan.key)
+                ? 'bg-slate-600/20 text-slate-400 border border-slate-500/30 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-500',
             ]"
           >
@@ -463,10 +465,22 @@ const isExactCurrentPlan = (planKey) => {
   return userBilling.value === selectedBilling;
 };
 
+// Helper to check if button should show unavailable style
+const isUnavailable = (planKey) => {
+  return planKey === "free" && currentPlan.value !== "free";
+};
+
 // دالة تحدد هل الزرار لازم يبقى disabled
 const isButtonDisabled = (planKey) => {
   if (checkoutLoading.value === planKey) return true;
-  return isExactCurrentPlan(planKey);
+  if (isExactCurrentPlan(planKey)) return true;
+
+  // ✅ NEW: Disable free button if user is on a paid plan
+  if (planKey === "free" && currentPlan.value !== "free") {
+    return true;
+  }
+
+  return false;
 };
 
 // دالة ترجع نص الزرار حسب الحالة
@@ -478,16 +492,16 @@ const getButtonText = (planKey) => {
     return t("pricing.currentPlan", "Current Plan");
   }
 
+  // ✅ NEW: لو المستخدم على خطة مدفوعة وبيرجع لـ Free
+  if (planKey === "free" && currentPlan.value !== "free") {
+    return t("pricing.unavailable", "Unavailable");
+  }
+
   // لو نفس الخطة بس نوع اشتراك مختلف (Pro Monthly → Pro Annual)
   if (currentPlan.value === planKey && planKey !== "free") {
     return annual.value
       ? t("pricing.switchToAnnual", "Switch to Annual")
       : t("pricing.switchToMonthly", "Switch to Monthly");
-  }
-
-  // لو نازل من خطة أعلى (Enterprise → Pro)
-  if (planKey === "free" && currentPlan.value !== "free") {
-    return t("pricing.downgrade", "Downgrade");
   }
 
   // الحالة العادية
@@ -567,6 +581,12 @@ function formatDate(iso) {
 }
 
 async function subscribe(planKey) {
+  // This check is no longer needed since button is disabled
+  // But keep it as a safety guard
+  if (planKey === "free" && currentPlan.value !== "free") {
+    return; // Do nothing
+  }
+
   if (planKey === "free") {
     router.push("/login");
     return;
