@@ -1,6 +1,19 @@
 import { ref } from 'vue'
 
-const isDark = ref(document.documentElement.classList.contains('dark') || !document.documentElement.classList.contains('light'))
+const stored = localStorage.getItem('cf-theme')
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+const initialDark = stored ? stored === 'dark' : prefersDark
+
+const isDark = ref(initialDark)
+
+// Apply immediately on load
+if (isDark.value) {
+  document.documentElement.classList.add('dark')
+  document.documentElement.classList.remove('light')
+} else {
+  document.documentElement.classList.add('light')
+  document.documentElement.classList.remove('dark')
+}
 
 export function useTheme() {
   function toggle() {
