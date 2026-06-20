@@ -499,6 +499,8 @@
     "postPublished": "Post published successfully",
     "saveFailed": "Failed to save changes",
     "calendarExtended": "Calendar extended to include new post date",
+    "postAdded": "Post added successfully",
+    "addPostError": "Failed to add post. Please try again.",
     "day": {
       "mon": "Mon",
       "tue": "Tue",
