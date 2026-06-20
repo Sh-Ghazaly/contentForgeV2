@@ -1936,12 +1936,13 @@ onMounted(async () => {
   try {
     console.log("[Dashboard] Fetching user brands...");
     const brands = await brandApi.getMyBrands();
-
+    
     // نتحقق من أن اليوزر يمتلك براند واحد على الأقل مسجل باسمه
     if (brands && brands.length > 0) {
       const activeBrand = brands[0]; // نأخذ البراند الأول المتاح له
       brandId.value = activeBrand._id; // حفظ الـ ID في الـ ref الخاص بالصفحة
-
+      localStorage.setItem("cf_brandId", activeBrand._id);
+      
       console.log(
         `[Dashboard] Found Active Brand: ${activeBrand.name} (ID: ${activeBrand._id})`,
       );
