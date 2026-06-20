@@ -42,9 +42,34 @@ mongoose
   });
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+// app.use(
+//   cors({
+//     origin: process.env.CLIENT_URL || "http://localhost:5173",
+//     credentials: true,
+//   }),
+// );
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://content-forge-v2-frontend.vercel.app',
+  'http://localhost:5173',
+].filter(Boolean)
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true)
+      
+      // allow exact matches
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+      
+      // allow ANY Vercel preview URL for this project
+      if (/https:\/\/content-forge-v2-frontend-.*\.vercel\.app$/.test(origin)) {
+        return callback(null, true)
+      }
+
+      callback(new Error(`CORS blocked: ${origin}`))
+    },
     credentials: true,
   }),
 );
