@@ -275,18 +275,39 @@
 
           <button
             @click="handlePlanClick(plan)"
-            :disabled="checkoutLoading === plan.key"
+            :disabled="isButtonDisabled(plan.key)"
             class="w-full text-center py-3 rounded-xl text-sm font-medium mb-6 md:mb-8 transition-all duration-200 flex items-center justify-center gap-2"
-            :class="
-              plan.popular
+            :class="[
+              isExactCurrentPlan(plan.key)
+                ? isDark
+                  ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-not-allowed'
+                  : 'bg-green-50 text-green-700 border border-green-300 cursor-not-allowed'
+                : plan.popular
                 ? 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 disabled:opacity-50'
                 : isDark
                 ? 'border border-white/15 text-slate-300 hover:border-white/30 hover:text-white disabled:opacity-50'
-                : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50'
-            "
+                : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50',
+            ]"
           >
+            <!-- ✅ أيقونة ✓ لو دي الخطة الحالية -->
             <svg
-              v-if="checkoutLoading === plan.key"
+              v-if="isExactCurrentPlan(plan.key)"
+              class="w-4 h-4 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+
+            <!-- ✅ Spinner لو بيحمل -->
+            <svg
+              v-else-if="checkoutLoading === plan.key"
               class="w-4 h-4 animate-spin"
               fill="none"
               viewBox="0 0 24 24"
@@ -305,7 +326,9 @@
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
               />
             </svg>
-            {{ t("pricing.tryNow", "Try Now") }}
+
+            <!-- ✅ النص حسب الحالة -->
+            {{ getButtonText(plan.key) }}
           </button>
 
           <!-- Core Feature Mapping Migration -->
@@ -390,6 +413,11 @@ const annual = ref(false);
 const checkoutLoading = ref(null);
 const errorMsg = ref("");
 
+// ✅ حالة خطة المستخدم الحالية
+const userPlan = ref(null);
+const userBilling = ref(null);
+const userStatus = ref(null);
+
 // RTL Localization support logic
 const isRtl = computed(() => locale.value === "ar");
 
@@ -400,7 +428,34 @@ const toggleKnobClass = computed(() => {
   return "translate-x-0";
 });
 
-// Synced Plans Computed Hook structures directly from PricingSection.vue
+// ✅ دالة تحدد هل دي نفس الخطة ونفس نوع الاشتراك بالظبط
+const isExactCurrentPlan = (planKey) => {
+  if (!userPlan.value || userPlan.value === "free") return false;
+  if (userPlan.value !== planKey) return false;
+  const selectedBilling = annual.value ? "yearly" : "monthly";
+  return userBilling.value === selectedBilling;
+};
+
+// ✅ دالة تحدد هل الزرار لازم يبقى disabled
+const isButtonDisabled = (planKey) => {
+  if (checkoutLoading.value === planKey) return true;
+  return isExactCurrentPlan(planKey);
+};
+
+// ✅ دالة ترجع نص الزرار حسب الحالة
+const getButtonText = (planKey) => {
+  if (checkoutLoading.value === planKey) return "";
+  if (isExactCurrentPlan(planKey)) {
+    return t("pricing.currentPlan", "Current Plan");
+  }
+  if (userPlan.value === planKey && planKey !== "free") {
+    return annual.value
+      ? t("pricing.switchToAnnual", "Switch to Annual")
+      : t("pricing.switchToMonthly", "Switch to Monthly");
+  }
+  return t("pricing.tryNow", "Try Now");
+};
+
 const plans = computed(() => [
   {
     key: "pro",
@@ -446,15 +501,101 @@ function resetCheckoutState(event) {
   }
 }
 
+// ✅ جلب حالة الاشتراك الحالي
+async function loadStatus() {
+  try {
+    const status = await paymentApi.getStatus();
+    userPlan.value = status?.plan || "free";
+    
+    // ✅ تحديد نوع الاشتراك من الـ backend
+    if (status?.subscription?.interval) {
+      userBilling.value = status.subscription.interval === "year" ? "yearly" : "monthly";
+    } else {
+      userBilling.value = null; // مفيش اشتراك نشط
+    }
+    
+    userStatus.value = status?.status || "free";
+
+    console.log(
+      "✅ TrialExpired - User Plan:",
+      userPlan.value,
+      "Billing:",
+      userBilling.value,
+      "Status:",
+      userStatus.value
+    );
+  } catch (err) {
+    console.error("❌ Failed to fetch subscription:", err);
+    userPlan.value = "free";
+    userBilling.value = null;
+    userStatus.value = "free";
+  }
+}
+
+// ✅ دالة حماية الصفحة - متوافقة مع بيانات المستخدم الفعلية
+function checkAccess() {
+  const token = localStorage.getItem("cf_token");
+  const userStr = localStorage.getItem("cf_user");
+  
+  // 1️⃣ لو مش مسجل دخول → روح لـ Login
+  if (!token) {
+    router.replace("/login");
+    return false;
+  }
+  
+  // 2️⃣ لو مسجل دخول، تحقق من حالة الـ trial
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      const now = new Date();
+      const planEndsAt = user.planEndsAt ? new Date(user.planEndsAt) : null;
+      
+      // ✅ لو الـ trial لسه شغال (planEndsAt في المستقبل)
+      if (user?.plan === "free" && user?.isTrial && planEndsAt && planEndsAt > now) {
+        console.log("⚠️ Trial is still active, redirecting to dashboard");
+        router.replace("/dashboard");
+        return false;
+      }
+      
+      // ✅ لو عند خطة مدفوعة نشطة
+      if (user?.plan === "pro" || user?.plan === "enterprise") {
+        console.log("⚠️ User has active paid plan, redirecting to dashboard");
+        router.replace("/dashboard");
+        return false;
+      }
+      
+      // ✅ لو المستخدم لسه في الـ free plan ومش في trial
+      // يعني الـ trial انتهى أو مكنش فيه trial من الأساس
+      if (user?.plan === "free" && !user?.isTrial) {
+        // ده المستخدم اللي المفروض يوصل للصفحة دي
+        return true;
+      }
+      
+      // ✅ لو planEndsAt في الماضي (الـ trial انتهى)
+      if (user?.plan === "free" && planEndsAt && planEndsAt < now) {
+        return true;
+      }
+      
+    } catch (err) {
+      console.error("Failed to parse user data:", err);
+    }
+  }
+  
+  return true;
+}
+
 onMounted(() => {
+  // ✅ افحص الصلاحيات الأول
+  if (!checkAccess()) return;
+  
   window.addEventListener("pageshow", resetCheckoutState);
+  loadStatus();
 });
 
 onUnmounted(() => {
   window.removeEventListener("pageshow", resetCheckoutState);
 });
 
-// Unified Payment handler method from PricingSection.vue
 async function handlePlanClick(plan) {
   const token = localStorage.getItem("cf_token");
 
@@ -470,7 +611,9 @@ async function handlePlanClick(plan) {
     return;
   }
 
-  if (checkoutLoading.value) return;
+  if (isButtonDisabled(plan.key)) return;
+
+  sessionStorage.setItem("beforeCheckout", router.currentRoute.value.fullPath);
 
   checkoutLoading.value = plan.key;
   errorMsg.value = "";
@@ -479,7 +622,6 @@ async function handlePlanClick(plan) {
     const billingSuffix = annual.value ? "annual" : "monthly";
     const planKey = `${plan.key}_${billingSuffix}`;
 
-    // Tag origin parameter context
     const url = await paymentApi.checkout(planKey);
 
     if (url) {
@@ -495,6 +637,7 @@ async function handlePlanClick(plan) {
   } catch (e) {
     errorMsg.value = e.message || t("payment.errorGeneric");
     checkoutLoading.value = null;
+    sessionStorage.removeItem("beforeCheckout");
   }
 }
 
@@ -504,15 +647,3 @@ function logout() {
   router.push("/login");
 }
 </script>
-
-<style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-</style>
