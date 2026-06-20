@@ -334,7 +334,7 @@ const HF_TOKEN = process.env.HF_API_TOKEN;
 // const HF_URL = "https://router.huggingface.co/nscale/v1/images/generations";
 // const HF_URL = "https://router.huggingface.co/v1/images/generations";
 // const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
-const HF_URL = "https://router.huggingface.co/fal-ai/v1/images/generations";
+const HF_URL = "https://router.huggingface.co/together/v1/images/generations";
 const MODEL = "black-forest-labs/FLUX.1-schnell";
 
 // ── Platform dimensions ───────────────────────────────────────────────────────
