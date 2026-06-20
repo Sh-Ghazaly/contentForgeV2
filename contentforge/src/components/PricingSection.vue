@@ -163,7 +163,7 @@
             to="/dashboard"
             class="w-full text-center py-3 rounded-xl text-sm font-medium mb-6 md:mb-8 transition-all duration-200 flex items-center justify-center gap-2"
             :class="[
-              isCurrentPlan('free')
+              isExactCurrentPlan('free')
                 ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-default'
                 : plan.popular
                 ? 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 underline'
@@ -173,7 +173,7 @@
             ]"
           >
             <svg
-              v-if="isCurrentPlan('free')"
+              v-if="isExactCurrentPlan('free')"
               class="w-4 h-4"
               fill="none"
               viewBox="0 0 24 24"
@@ -187,7 +187,7 @@
               />
             </svg>
             {{
-              isCurrentPlan("free")
+              isExactCurrentPlan("free")
                 ? t("pricing.currentPlan", "Current Plan")
                 : t("pricing.tryNow", "Try Now")
             }}
