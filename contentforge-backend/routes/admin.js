@@ -365,7 +365,7 @@ router.put("/users/:id/block", adminOnly, async (req, res) => {
       return res.status(403).json({ message: "Cannot block an admin" });
 
     // ── UNBLOCK BRANCH ───────────────────────────────────────────────────────
-    if (user.isBlocked || user.moderation.blockStatus === "warning") {
+    if (user.isBlocked || user.moderation.blockStatus === "blocked" || user.moderation.blockStatus === "warning") {
       user.isBlocked = false;
       user.moderation.blockStatus = "none";
       user.moderation.restrictionReason = null;
