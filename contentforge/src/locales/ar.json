@@ -470,6 +470,11 @@
     "statusApproved": "معتمد",
     "statusScheduled": "مجدول",
     "statusPublished": "منشور",
+    "postUpdated": "تم تحديث المنشور بنجاح",
+    "postDeleted": "تم حذف المنشور بنجاح",
+    "postPublished": "تم نشر المنشور بنجاح",
+    "saveFailed": "فشل في حفظ التغييرات",
+    "calendarExtended": "تم تمديد التقويم ليشمل تاريخ المنشور الجديد",
     "day": {
       "mon": "الإثنين",
       "tue": "الثلاثاء",
