@@ -293,7 +293,6 @@ import { RouterLink, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { useTheme } from "../composables/useTheme.js";
 import paymentApi from "../api/paymentApi.js";
-import subscriptionApi from "../api/subscriptionApi.js"; // ✅ أضف ده
 
 const { t, locale } = useI18n();
 const { isDark } = useTheme();
@@ -316,7 +315,7 @@ onMounted(async () => {
   // ✅ لو المستخدم مسجل دخول، جيب خطته الحالية
   if (token) {
     try {
-      const status = await subscriptionApi.getStatus();
+      const status = await paymentApi.getStatus();
       userPlan.value = status?.plan || "free";
       userBilling.value =
         status?.subscription?.interval === "year" ? "yearly" : "monthly";
