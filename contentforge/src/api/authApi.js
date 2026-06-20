@@ -29,8 +29,10 @@ const authApi = {
 
   // ── Logout ──────────────────────────────────────────────────────────────────
   logout() {
-    localStorage.removeItem('cf_token')
-    localStorage.removeItem('cf_user')
+    localStorage.removeItem('cf_token');
+    localStorage.removeItem('cf_user');
+    localStorage.removeItem("cf_brandId");
+    localStorage.removeItem("cf-locale");
     window.location.href = '/login'
   },
 
