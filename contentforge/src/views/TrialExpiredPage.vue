@@ -503,6 +503,9 @@ function resetCheckoutState(event) {
 
 // ✅ جلب حالة الاشتراك الحالي
 async function loadStatus() {
+  const token = localStorage.getItem("cf_token");
+  if (!token) return; // ← مستخدم مش logged in، مش محتاجين نجيب status
+
   try {
     const status = await paymentApi.getStatus();
     userPlan.value = status?.plan || "free";
