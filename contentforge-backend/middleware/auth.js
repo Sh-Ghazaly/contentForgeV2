@@ -97,6 +97,9 @@ const protect = async (req, res, next) => {
         // message: 'تم حظر حسابك، يرجى التواصل مع الدعم الفني.' 
       });
     }
+
+    // ✅ ALLOW payment routes even if trial/subscription expired
+    const isPaymentRoute = req.path.startsWith('/payment');
      
     // ----------------------------------------------------
     // الحتة السحرية الجديدة هنا:
@@ -106,7 +109,8 @@ const protect = async (req, res, next) => {
       !req.user.isAdmin &&
       req.user.plan === "free" &&
       req.user.isTrial &&
-      Date.now() > new Date(req.user.planEndsAt)
+      Date.now() > new Date(req.user.planEndsAt) &&
+      !isPaymentRoute
     ) {
       return res.status(403).json({
         success: false,
@@ -119,7 +123,8 @@ const protect = async (req, res, next) => {
     if (
       !req.user.isAdmin && 
       req.user.planEndsAt && 
-      new Date() > new Date(req.user.planEndsAt)
+      new Date() > new Date(req.user.planEndsAt)&&
+      !isPaymentRoute
     ) {
       return res.status(403).json({
         success: false,
