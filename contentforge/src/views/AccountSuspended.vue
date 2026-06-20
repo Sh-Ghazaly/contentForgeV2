@@ -56,7 +56,7 @@
         </template>
 
         <!-- PLAN EXPIRED -->
-        <template v-else-if="reason === 'plan_expired'">
+        <!-- <template v-else-if="reason === 'plan_expired'">
           <div
             class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
             :class="isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-50 text-amber-600'"
@@ -84,7 +84,7 @@
             <i class="ti ti-sparkles"></i>
             {{ t('suspended.expired.cta') }}
           </router-link>
-        </template>
+        </template> -->
 
       </div>
 

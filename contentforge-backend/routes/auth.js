@@ -84,7 +84,7 @@ router.get('/google/callback',
     }
 
     if (!req.user.isAdmin && !req.user.isTrial && req.user.planEndsAt && new Date() > new Date(req.user.planEndsAt)) {
-      return res.redirect(`${frontendUrl}/account-suspended?reason=plan_expired`)
+      return res.redirect(`${frontendUrl}/trial-expired`)
     }
 
     const token = signToken(req.user._id)
