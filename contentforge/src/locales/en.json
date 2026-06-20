@@ -1511,5 +1511,18 @@
     "infoMessage": "Upgrade your plan or resubscribe to continue using all features without limits.",
     "upgradePlan": "Upgrade Plan",
     "resubscribe": "Resubscribe"
-  }
+  },
+  "suspended": {
+  "blocked": {
+    "title": "Account Suspended",
+    "subtitle": "Your account has been suspended by the administration. If you believe this is an error, please contact support.",
+    "cta": "Contact Support"
+  },
+  "expired": {
+    "title": "Subscription Expired",
+    "subtitle": "Your subscription has expired. Please upgrade your plan to continue using ContentForge.",
+    "cta": "Renew Subscription"
+  },
+  "logout": "Log out"
+}
 }
