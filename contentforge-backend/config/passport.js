@@ -3,7 +3,6 @@ require("dotenv").config();
 
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
-// const FacebookStrategy = require('passport-facebook').Strategy;
 const { User, PlatformSettings } = require("../models");
 
 // ── Google Strategy ──────────────────────────────────────────────────────────
@@ -12,7 +11,9 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "https://content-forge-v2.vercel.app/api/auth/google/callback",
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL ||
+        "https://content-forge-v2.vercel.app/api/auth/google/callback",
       scope: ["profile", "email"],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -28,11 +29,6 @@ passport.use(
         });
 
         if (user) {
-          if (user.isBlocked) {
-          // نرسل خطأ إلى Passport بأن المستخدم محظور
-          // return done(null, false, { message: 'Your account has been blocked. Please contact support.' });
-          return done(null, user);
-        }
           if (!user.googleId) {
             user.googleId = profile.id;
             user.avatar = avatar || user.avatar;
@@ -44,6 +40,7 @@ passport.use(
         const settings = (await PlatformSettings.findOne()) || {};
         const trialDays = settings.trialDays ?? 14;
 
+        // ✅ إنشاء المستخدم مع كل الحقول المطلوبة
         user = await User.create({
           name,
           email,
@@ -56,6 +53,24 @@ passport.use(
           isTrial: true,
           hasUsedTrial: true,
           password: Math.random().toString(36).slice(-16),
+          // ✅ أضف planLimits
+          planLimits: {
+            maxAiImagesPerMonth: 3,
+            maxPostsPerCalendar: 5,
+            maxCalendarsPerMonth: 1,
+            maxBrands: 1,
+            advancedAnalytics: false,
+            multiDialectSupport: false,
+            automatedReels: false,
+            prioritySupport: false,
+          },
+          // ✅ أضف usage
+          usage: {
+            aiImagesGenerated: 0,
+            postsGenerated: 0,
+            calendarsCreated: 0,
+            lastUsageReset: new Date(),
+          },
         });
 
         done(null, user);
@@ -65,7 +80,5 @@ passport.use(
     },
   ),
 );
-
-
 
 module.exports = passport;
