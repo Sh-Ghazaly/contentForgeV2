@@ -223,7 +223,7 @@
             <p class="form-sub">{{ t("auth.forgotSubtitle") }}</p>
           </div>
 
-          <!-- <div v-if="error" class="alert alert-error">
+          <div v-if="error" class="alert alert-error">
             <svg
               class="alert-icon"
               fill="none"
@@ -238,7 +238,7 @@
               />
             </svg>
             {{ error }}
-          </div> -->
+          </div>
 
           <div class="field">
             <label>{{ t("auth.email") }}</label>
@@ -293,7 +293,7 @@
             <p class="form-sub">{{ t("auth.otpSubtitle") }}</p>
           </div>
 
-          <!-- <div v-if="error" class="alert alert-error">
+          <div v-if="error" class="alert alert-error">
             <svg
               class="alert-icon"
               fill="none"
@@ -308,7 +308,7 @@
               />
             </svg>
             {{ error }}
-          </div> -->
+          </div>
 
           <div class="otp-row" dir="ltr">
             <input
@@ -385,7 +385,7 @@
             <p class="form-sub">{{ t("auth.newPasswordSubtitle") }}</p>
           </div>
 
-          <!-- <div v-if="error" class="alert alert-error">
+          <div v-if="error" class="alert alert-error">
             <svg
               class="alert-icon"
               fill="none"
@@ -400,7 +400,7 @@
               />
             </svg>
             {{ error }}
-          </div> -->
+          </div>
 
           <div class="field">
             <label>{{ t("profile.newPassword") }}</label>
@@ -531,7 +531,7 @@
             </p>
           </div>
 
-          <!-- <div v-if="error" class="alert alert-error">
+          <div v-if="error" class="alert alert-error">
             <svg
               class="alert-icon"
               fill="none"
@@ -546,7 +546,7 @@
               />
             </svg>
             {{ error }}
-          </div> -->
+          </div>
 
           <div v-if="successKey" class="alert alert-success">
             <svg
