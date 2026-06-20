@@ -58,6 +58,13 @@ api.interceptors.response.use(
         }
         return Promise.reject({ status, message, reason });
       }
+      ///////////////////////////////////////////////////////هنا/*/**/
+      if (reason === "subscription_expired") {
+      if (currentPath !== "/trial-expired" && currentPath !== "/payment") {
+        window.location.href = "/trial-expired";
+      }
+      return Promise.reject({ status, message, reason });
+    }
       // ✅ باقي الحالات → Modal (المستخدم لسه يقدر يستخدم الموقع)
       const modalTypeMap = {
         feature_locked: { type: "feature_locked", title: "Feature Locked" },
