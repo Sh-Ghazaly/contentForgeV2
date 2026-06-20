@@ -842,34 +842,7 @@ function handleForgotOtpKeyDown(index, event) {
 }
 
 // ── Post-auth redirect: payment flow vs normal flow ───────────────────────────
-async function handlePostAuthRedirect(user) {
-  const { plan, billing, redirect } = route.query;
 
-  if (plan) {
-    // Came from a "Try Now" button -> proceed to payment
-    try {
-      const fullPlanKey = `${plan}_${billing || "monthly"}`;
-      const url = await paymentApi.checkout(fullPlanKey);
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-      error.value = t("payment.errorGeneric");
-    } catch (err) {
-      error.value = err.message || t("payment.errorGeneric");
-    }
-    // Fall back to dashboard if checkout failed
-    router.push(user?.isAdmin ? "/admin" : "/dashboard");
-    return;
-  }
-
-  // Normal flow: navbar "Get Started", payment cancel back button, direct /login, etc.
-  if (redirect && typeof redirect === "string" && redirect.startsWith("/")) {
-    router.push(redirect);
-  } else {
-    router.push(user?.isAdmin ? "/admin" : "/dashboard");
-  }
-}
 
 onMounted(async () => {
   try {
@@ -930,58 +903,47 @@ async function resendForgotOtp() {
  * send them straight to the payment API after successful login/register.
  * Otherwise fall back to normal dashboard/admin routing.
  */
+// ✅ NEW: Unified Redirect Logic
+async function handlePostLoginRedirect(user) {
+  const targetPlan = route.query.plan;
+  const targetBilling = route.query.billing;
+  const targetRedirect = route.query.redirect;
 
-async function redirectAfterAuth() {
-  const { plan, billing, redirect } = route.query;
-  const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
-  const cameFromCancel =
-    typeof redirect === "string" && redirect.startsWith("/payment/cancel");
+  // 1. Admin check (Admins have no plans)
+  if (user?.isAdmin) { router.push("/admin"); return; }
 
-  if (plan && !cameFromCancel) {
+  // 2. Trial Expired check
+  if (user?.trialExpired) { router.push("/trial-expired"); return; }
+
+  // 3. 🌟 SPECIAL CASE: Came from "Try Now" AND it's a PAID plan -> Stripe
+  if (targetPlan && targetPlan !== 'free' && targetBilling) {
     try {
-      const billingSuffix = billing === "annual" ? "annual" : "monthly";
-      const fullPlanKey = `${plan}_${billingSuffix}`;
-
-      // Mark origin as 'pricing_guest' or 'pricing' so the backend cancel url knows where to go
-      const url = await paymentApi.checkout(fullPlanKey, {
-        from: "pricing_guest",
-      });
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-      error.value = t(
-        "payment.errorGeneric",
-        "تأخر استجابة بوابة الدفع، يرجى المحاولة مرة أخرى.",
-      );
-    } catch (err) {
-      error.value = err.message || t("payment.errorGeneric");
-    }
+      const paymentKey = `${targetPlan}_${targetBilling}`;
+      const url = await paymentApi.checkout(paymentKey, { from: "login_redirect" });
+      if (url) { window.location.href = url; return; }
+    } catch (e) { console.error("Checkout failed:", e); }
   }
-  router.push(user?.isAdmin ? "/admin" : "/dashboard");
+
+  // 4. 🛡️ FALLBACK: Normal flow (Free plan, Get Started, Navbar Sign In)
+  if (targetRedirect && typeof targetRedirect === 'string' && targetRedirect.startsWith('/')) {
+    router.push(targetRedirect);
+  } else {
+    router.push("/dashboard");
+  }
 }
 
 // ── Submit (login / register) ─────────────────────────────────────────────────
+// ✅ UPDATED SUBMIT FUNCTION
 async function submit() {
   error.value = null;
-  if (!form.value.email || !form.value.password) {
-    error.value = t("auth.errorFillAll");
-    return;
-  }
+  if (!form.value.email || !form.value.password) { error.value = t("auth.errorFillAll"); return; }
+  
   if (isRegister.value) {
-    if (!form.value.name || !form.value.phone || !form.value.confirmPassword) {
-      error.value = t("auth.errorFillAll");
-      return;
-    }
-    if (!form.value.email.includes("@")) {
-      error.value = t("auth.wrongMail");
-      return;
-    }
-    if (form.value.password !== form.value.confirmPassword) {
-      error.value = t("auth.errorPasswordMismatch");
-      return;
-    }
+    if (!form.value.name || !form.value.phone || !form.value.confirmPassword) { error.value = t("auth.errorFillAll"); return; }
+    if (!form.value.email.includes("@")) { error.value = t("auth.wrongMail"); return; }
+    if (form.value.password !== form.value.confirmPassword) { error.value = t("auth.errorPasswordMismatch"); return; }
   }
+
   loading.value = true;
   try {
     if (isRegister.value) {
@@ -989,48 +951,12 @@ async function submit() {
       successKey.value = "auth.checkEmail";
       showOTP.value = true;
     } else {
-      await authStore.login(form.value);
+      await authStore.login(form.value); // No longer forces redirect!
       await nextTick();
+      
       if (localStorage.getItem("cf_token")) {
         const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
-        await handlePostAuthRedirect(user);
-
-        // 1. Check Admin status
-        if (user?.isAdmin) {
-          router.push("/admin");
-          return;
-        }
-
-        // 2. Check for Expired Trial status
-        if (user?.trialExpired) {
-          router.push("/trial-expired");
-          return;
-        }
-
-        // 3. 🌟 SPECIAL CASE: Came from Pricing "Try Now" button
-        const targetPlan = route.query.plan;
-        const targetBilling = route.query.billing;
-
-        if (targetPlan && targetBilling) {
-          try {
-            const paymentKey = `${targetPlan}_${targetBilling}`;
-            const url = await paymentApi.checkout(paymentKey, {
-              from: "login_redirect",
-            });
-
-            if (url) {
-              window.location.href = url; // Redirect to Stripe
-              return; // Stop here, do not go to dashboard
-            }
-          } catch (e) {
-            console.error("Failed to initiate checkout redirect:", e);
-            // If checkout fails, we safely fall through to the dashboard below
-          }
-        }
-
-        // 4. 🛡️ FALLBACK: Normal login flow (No plan in URL, or checkout failed)
-        // This handles direct logins, navbar "Sign In" clicks, etc.
-        router.push("/dashboard");
+        await handlePostLoginRedirect(user); // ✅ Handles everything cleanly
       } else {
         error.value = t("auth.errorTokenMissing");
       }
@@ -1043,6 +969,7 @@ async function submit() {
 }
 
 // ── Verify email OTP (registration) ──────────────────────────────────────────
+// ✅ UPDATED VERIFY EMAIL FUNCTION
 async function verifyEmail() {
   error.value = null;
   loading.value = true;
@@ -1052,37 +979,13 @@ async function verifyEmail() {
       code: otpInputs.value.join(""),
     });
     successKey.value = "auth.verifiedSuccess";
-    await authStore.login(form.value);
-    const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
-    await handlePostAuthRedirect(user);
-
-    if (user?.isAdmin) {
-      router.push("/admin");
-    } else if (user?.trialExpired) {
-      router.push("/trial-expired");
-    } else {
-      // 🌟 SPECIAL CASE: New user registered via Pricing "Try Now"
-      const targetPlan = route.query.plan;
-      const targetBilling = route.query.billing;
-
-      if (targetPlan && targetBilling) {
-        try {
-          const paymentKey = `${targetPlan}_${targetBilling}`;
-          const url = await paymentApi.checkout(paymentKey, {
-            from: "login_redirect",
-          });
-
-          if (url) {
-            window.location.href = url;
-            return;
-          }
-        } catch (e) {
-          console.error("Failed to initiate checkout redirect:", e);
-        }
-      }
-
-      // 🛡️ FALLBACK: Normal registration flow -> go to dashboard
-      router.push("/dashboard");
+    
+    await authStore.login(form.value); // Auto-login after verification
+    await nextTick();
+    
+    if (localStorage.getItem("cf_token")) {
+      const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
+      await handlePostLoginRedirect(user); // ✅ Uses the same clean logic
     }
   } catch (err) {
     error.value = err.response?.data?.message || t("auth.errorInvalidCode");

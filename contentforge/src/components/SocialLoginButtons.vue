@@ -74,6 +74,16 @@ const apiUrl =
 function loginWithGoogle() {
   provider.value = "google";
   loading.value = true;
+
+  // ✅ Save pending checkout/redirect info before leaving the page
+  const params = new URLSearchParams(window.location.search);
+  const plan = params.get('plan');
+  const billing = params.get('billing');
+  const redirect = params.get('redirect');
+
+  if (plan || redirect) {
+    sessionStorage.setItem('pending_auth_redirect', JSON.stringify({ plan, billing, redirect }));
+  }
   window.location.href = `${apiUrl}/auth/google`;
 }
 

@@ -34,11 +34,11 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = data.user
 
       // ← الإضافة هنا
-      if (data.user?.isAdmin) {
-        window.location.href = '/admin'
-      } else {
-        window.location.href = '/dashboard'
-      }
+      // if (data.user?.isAdmin) {
+      //   window.location.href = '/admin'
+      // } else {
+      //   window.location.href = '/dashboard'
+      // }
 
       return data
     } catch (err) {
