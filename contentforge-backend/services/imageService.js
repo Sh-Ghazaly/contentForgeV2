@@ -331,7 +331,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const HF_TOKEN = process.env.HF_API_TOKEN;
-const HF_URL = "https://router.huggingface.co/nscale/v1/images/generations";
+// const HF_URL = "https://router.huggingface.co/nscale/v1/images/generations";
+const HF_URL = "https://router.huggingface.co/v1/images/generations";
 const MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
 
 // ── Platform dimensions ───────────────────────────────────────────────────────
