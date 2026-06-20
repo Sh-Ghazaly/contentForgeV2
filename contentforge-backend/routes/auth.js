@@ -230,21 +230,26 @@ router.post("/login", async (req, res) => {
     })
   }
 
-  if (user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt)) {
-    return res.status(403).json({
-      success: false,
-      reason: 'trial_expired',
-      redirectUrl: '/trial-expired'
-    })
-  }
+  // if (user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt)) {
+  //   return res.status(403).json({
+  //     success: false,
+  //     reason: 'trial_expired',
+  //     redirectUrl: '/trial-expired'
+  //   })
+  // }
 
-  if (!user.isAdmin && user.planEndsAt && new Date() > new Date(user.planEndsAt)) {
-    return res.status(403).json({
-      success: false,
-      reason: 'subscription_expired',
-      redirectUrl: '/billing'
-    })
-  }
+  // if (!user.isAdmin && user.planEndsAt && new Date() > new Date(user.planEndsAt)) {
+  //   return res.status(403).json({
+  //     success: false,
+  //     reason: 'subscription_expired',
+  //     redirectUrl: '/billing'
+  //   })
+  // }
+
+  // ✅ REPLACE WITH THIS:
+const isTrialExpired = user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt);
+const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.planEndsAt && new Date() > new Date(user.planEndsAt);
+
 
   res.json({
     token,
@@ -256,7 +261,8 @@ router.post("/login", async (req, res) => {
       isAdmin: user.isAdmin,
       isTrial: user.isTrial,
       planEndsAt: user.planEndsAt,
-      trialExpired: user.isTrial && user.planEndsAt && new Date() > new Date(user.planEndsAt),
+      trialExpired: isTrialExpired,           
+      subscriptionExpired: isSubscriptionExpired ,
     },
   });
 });
