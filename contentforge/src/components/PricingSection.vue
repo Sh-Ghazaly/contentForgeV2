@@ -160,17 +160,24 @@
 
           <RouterLink
             v-if="plan.key === 'free'"
-            to="/dashboard"
+            :to="isFreeButtonDisabled ? '#' : '/dashboard'"
             class="w-full text-center py-3 rounded-xl text-sm font-medium mb-6 md:mb-8 transition-all duration-200 flex items-center justify-center gap-2"
             :class="[
               isExactCurrentPlan('free')
-                ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-default'
+                ? isDark
+                  ? 'bg-green-600/20 text-green-400 border border-green-500/30 cursor-not-allowed'
+                  : 'bg-green-50 text-green-700 border border-green-300 cursor-not-allowed'
+                : isFreeButtonDisabled
+                ? isDark
+                  ? 'bg-slate-600/20 text-slate-400 border border-slate-500/30 cursor-not-allowed'
+                  : 'bg-slate-100 text-slate-400 border border-slate-300 cursor-not-allowed'
                 : plan.popular
                 ? 'bg-blue-600 text-white hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-500/25 underline'
                 : isDark
                 ? 'border border-white/15 text-slate-300 hover:border-white/30 hover:text-white underline'
                 : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 underline',
             ]"
+            @click="isFreeButtonDisabled && $event.preventDefault()"
           >
             <svg
               v-if="isExactCurrentPlan('free')"
@@ -186,11 +193,7 @@
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            {{
-              isExactCurrentPlan("free")
-                ? t("pricing.currentPlan", "Current Plan")
-                : t("pricing.tryNow", "Try Now")
-            }}
+            {{ getButtonText("free") }}
           </RouterLink>
 
           <button
@@ -360,6 +363,11 @@ const getButtonText = (planKey) => {
     return t('pricing.currentPlan', 'Current Plan')
   }
   
+  // ✅ لو المستخدم مسجل دخول وعلى خطة مدفوعة وبيشوف زرار Free
+  if (isLoggedIn.value && planKey === "free" && userPlan.value && userPlan.value !== "free") {
+    return t('pricing.unavailable', 'Unavailable')
+  }
+  
   // لو نفس الخطة بس نوع اشتراك مختلف
   if (isLoggedIn.value && userPlan.value === planKey && planKey !== "free") {
     return annual.value 
@@ -369,6 +377,14 @@ const getButtonText = (planKey) => {
   
   return t('pricing.tryNow', 'Try Now')
 }
+
+// ✅ هل زرار الـ Free يجب أن يكون disabled (current plan أو unavailable)
+const isFreeButtonDisabled = computed(() => {
+  if (!isLoggedIn.value) return false
+  if (isExactCurrentPlan("free")) return true
+  if (userPlan.value && userPlan.value !== "free") return true
+  return false
+})
 
 const isRtl = computed(() => locale.value === "ar");
 
