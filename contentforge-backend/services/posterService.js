@@ -10,8 +10,8 @@ const HF_TOKEN = process.env.HF_API_TOKEN;
 
 // ── إعدادات Hugging Face ────────────────────────────────────
 const HF_GENERATION_URL =
-  "https://router.huggingface.co/nscale/v1/images/generations";
-const HF_MODEL = "stabilityai/stable-diffusion-xl-base-1.0";
+  "https://router.huggingface.co/together/v1/images/generations";
+const HF_MODEL = "black-forest-labs/FLUX.1-schnell";
 const HF_RM_BG_URL =
   "https://api-inference.huggingface.co/models/not-lain/background-removal";
 
