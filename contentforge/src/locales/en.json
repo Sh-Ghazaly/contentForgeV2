@@ -123,8 +123,8 @@
     "passwordResetSuccess": "Password reset successfully! Please log in with your new password."
   },
   "trial": {
-    "badge": "Trial Expired",
-    "heading": "Your free trial has ended",
+    "badge": "Access Expired",
+    "heading": "Your access has ended",
     "subheading": "Upgrade to keep generating Arabic content calendars, using your brand voice memory, and publishing to all platforms.",
     "statsGenerated": "Posts Generated",
     "statsCalendars": "Calendars Created",
@@ -171,8 +171,8 @@
         ]
       }
     },
-    "title": "Your free trial has ended",
-    "subtitle": "Your free trial of ContentForge has expired. Choose a plan below to keep generating Arabic content for your brand.",
+    "title": "Your access has ended",
+  "subtitle": "Your ContentForge access has expired. Choose a plan below to continue generating Arabic content for your brand.",
     "comingSoon": "Payments are coming soon - we'll notify you when they're live! 🚀",
     "signOut": "Sign out and use a different account",
     "starter": {

@@ -222,13 +222,13 @@ router.post("/login", async (req, res) => {
   const token = signToken(user._id);
 
   // ← ضيفي الـ checks هنا قبل ما ترجعي الـ token
-  if (user.isBlocked) {
-    return res.status(403).json({
-      success: false,
-      reason: 'blocked',
-      redirectUrl: '/account-suspended'
-    })
-  }
+  // if (user.isBlocked) {
+  //   return res.status(403).json({
+  //     success: false,
+  //     reason: 'blocked',
+  //     redirectUrl: '/account-suspended'
+  //   })
+  // }
 
   // if (user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt)) {
   //   return res.status(403).json({
