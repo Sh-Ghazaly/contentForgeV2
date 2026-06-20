@@ -110,8 +110,8 @@ const protect = async (req, res, next) => {
     ) {
       return res.status(403).json({
         success: false,
-        // message:
-        //   "Your 14-day free trial has expired. Please subscribe to continue.",
+        message:
+          "Your 14-day free trial has expired. Please subscribe to continue.",
         reason: "trial_expired", // ← أضف ده
         upgradeUrl: "/trial-expired", // ← أضف ده
       });
@@ -123,7 +123,7 @@ const protect = async (req, res, next) => {
     ) {
       return res.status(403).json({
         success: false,
-        // message: "Your subscription has expired. Please renew your plan to continue.",
+        message: "Your subscription has expired. Please renew your plan to continue.",
         reason: "subscription_expired", 
         upgradeUrl: "/billing" // توجيه لصفحة الدفع أو تجديد الباقة
       });

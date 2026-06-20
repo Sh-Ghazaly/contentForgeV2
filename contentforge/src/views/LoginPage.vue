@@ -130,7 +130,7 @@
             <p class="form-sub">{{ t("auth.otpSubtitle") }}</p>
           </div>
 
-          <!-- <div v-if="error" class="alert alert-error">
+          <div v-if="error" class="alert alert-error">
             <svg
               class="alert-icon"
               fill="none"
@@ -145,7 +145,7 @@
               />
             </svg>
             {{ error }}
-          </div> -->
+          </div>
 
           <div v-if="successKey" class="alert alert-success">
             <svg
