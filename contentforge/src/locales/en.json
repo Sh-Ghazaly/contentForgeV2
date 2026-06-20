@@ -494,6 +494,11 @@
     "statusApproved": "Approved",
     "statusScheduled": "Scheduled",
     "statusPublished": "Published",
+    "postUpdated": "Post updated successfully",
+    "postDeleted": "Post deleted successfully",
+    "postPublished": "Post published successfully",
+    "saveFailed": "Failed to save changes",
+    "calendarExtended": "Calendar extended to include new post date",
     "day": {
       "mon": "Mon",
       "tue": "Tue",
