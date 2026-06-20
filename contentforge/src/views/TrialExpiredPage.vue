@@ -534,52 +534,52 @@ async function loadStatus() {
 
 // ✅ دالة حماية الصفحة - متوافقة مع بيانات المستخدم الفعلية
 function checkAccess() {
-  const token = localStorage.getItem("cf_token");
-  const userStr = localStorage.getItem("cf_user");
+  // const token = localStorage.getItem("cf_token");
+  // const userStr = localStorage.getItem("cf_user");
   
-  // 1️⃣ لو مش مسجل دخول → روح لـ Login
-  if (!token) {
-    router.replace("/login");
-    return false;
-  }
+  // // 1️⃣ لو مش مسجل دخول → روح لـ Login
+  // if (!token) {
+  //   router.replace("/login");
+  //   return false;
+  // }
   
-  // 2️⃣ لو مسجل دخول، تحقق من حالة الـ trial
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      const now = new Date();
-      const planEndsAt = user.planEndsAt ? new Date(user.planEndsAt) : null;
+  // // 2️⃣ لو مسجل دخول، تحقق من حالة الـ trial
+  // if (userStr) {
+  //   try {
+  //     const user = JSON.parse(userStr);
+  //     const now = new Date();
+  //     const planEndsAt = user.planEndsAt ? new Date(user.planEndsAt) : null;
       
-      // ✅ لو الـ trial لسه شغال (planEndsAt في المستقبل)
-      if (user?.plan === "free" && user?.isTrial && planEndsAt && planEndsAt > now) {
-        console.log("⚠️ Trial is still active, redirecting to dashboard");
-        router.replace("/dashboard");
-        return false;
-      }
+  //     // ✅ لو الـ trial لسه شغال (planEndsAt في المستقبل)
+  //     if (user?.plan === "free" && user?.isTrial && planEndsAt && planEndsAt > now) {
+  //       console.log("⚠️ Trial is still active, redirecting to dashboard");
+  //       router.replace("/dashboard");
+  //       return false;
+  //     }
       
-      // ✅ لو عند خطة مدفوعة نشطة
-      if (user?.plan === "pro" || user?.plan === "enterprise") {
-        console.log("⚠️ User has active paid plan, redirecting to dashboard");
-        router.replace("/dashboard");
-        return false;
-      }
+  //     // ✅ لو عند خطة مدفوعة نشطة
+  //     if (user?.plan === "pro" || user?.plan === "enterprise") {
+  //       console.log("⚠️ User has active paid plan, redirecting to dashboard");
+  //       router.replace("/dashboard");
+  //       return false;
+  //     }
       
-      // ✅ لو المستخدم لسه في الـ free plan ومش في trial
-      // يعني الـ trial انتهى أو مكنش فيه trial من الأساس
-      if (user?.plan === "free" && !user?.isTrial) {
-        // ده المستخدم اللي المفروض يوصل للصفحة دي
-        return true;
-      }
+  //     // ✅ لو المستخدم لسه في الـ free plan ومش في trial
+  //     // يعني الـ trial انتهى أو مكنش فيه trial من الأساس
+  //     if (user?.plan === "free" && !user?.isTrial) {
+  //       // ده المستخدم اللي المفروض يوصل للصفحة دي
+  //       return true;
+  //     }
       
-      // ✅ لو planEndsAt في الماضي (الـ trial انتهى)
-      if (user?.plan === "free" && planEndsAt && planEndsAt < now) {
-        return true;
-      }
+  //     // ✅ لو planEndsAt في الماضي (الـ trial انتهى)
+  //     if (user?.plan === "free" && planEndsAt && planEndsAt < now) {
+  //       return true;
+  //     }
       
-    } catch (err) {
-      console.error("Failed to parse user data:", err);
-    }
-  }
+  //   } catch (err) {
+  //     console.error("Failed to parse user data:", err);
+  //   }
+  // }
   
   return true;
 }
