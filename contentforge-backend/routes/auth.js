@@ -65,7 +65,13 @@ router.get('/google', passport.authenticate('google', {
 //   }
 // );
 router.get('/google/callback',
-  passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
+  (req, res, next) => {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+    passport.authenticate('google', { 
+      session: false, 
+      failureRedirect: `${frontendUrl}/login?error=google_auth_failed`
+    })(req, res, next)
+  },
   (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
 
