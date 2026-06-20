@@ -801,6 +801,8 @@
     "downgrade": "الرجوع للخطة المجانية",
     "cancelsAtEnd": "سيتم الإلغاء بنهاية الفترة",
     "accessUntil": "الوصول متاح حتى",
+    "switchToAnnual": "التحويل للسنوي",
+    "switchToMonthly": "التحويل للشهري",
     "plans": {
       "free": {
         "name": "المجانية",
