@@ -173,15 +173,20 @@ router.post("/login", async (req, res) => {
     reason: 'blocked'  
   });
 
+  const isTrialExpired = user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt);
+  const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.planEndsAt && new Date() > new Date(user.planEndsAt);
+// ✅ أضيفي الـ checks دول
+if (isTrialExpired || isSubscriptionExpired) {
+  return res.status(403).json({
+    success: false,
+    reason: 'trial_expired',
+    redirectUrl: '/trial-expired'
+  });
+}
   user.lastLoginAt = new Date();
   await user.save();
 
   const token = signToken(user._id);
-
-  
-const isTrialExpired = user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt);
-const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.planEndsAt && new Date() > new Date(user.planEndsAt);
-
 
   res.json({
     token,
