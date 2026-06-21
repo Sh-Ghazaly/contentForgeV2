@@ -14,10 +14,6 @@ const adminApi = {
   saveSettings:    (data)       => api.put('/admin/settings', data).then(r => r.data),
   updateTrialDays: (days)       => api.put('/admin/settings/trial-days', { trialDays: days }).then(r => r.data),
   triggerExpiryWarnings: ()     => api.post('/admin/trigger-expiry-warnings').then(r => r.data),
-  // saveSettings: (data)   => api.put('/admin/settings', data),
-  // ExpiryWarnings: () => api.post('/admin/settings/expiry-warnings').then(r => r.data),
-    // updateTrialDays: (days) => api.put('/admin/settings/trial-days', { trialDays: days }),
-
 }
 
 export default adminApi

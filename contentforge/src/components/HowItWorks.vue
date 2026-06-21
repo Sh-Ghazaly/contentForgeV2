@@ -96,13 +96,10 @@ const UploadVisual = defineComponent({
     return h('div', { class: 'space-y-3' }, [
       h('p', { class: 'text-xs font-medium mb-3 ' + (this.isDark ? 'text-slate-500' : 'text-slate-600') }, this.t('howItWorks.visual.brandVaultSetup')),
       h('div', { class: 'flex gap-2 flex-wrap' }, [
-        // UPDATED: Replaced hardcoded '📄 Brand Guidelines.pdf'
         h('div', { class: 'px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 ' + (this.isDark ? 'bg-blue-600/15 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700') }, ['📄 ', this.t('howItWorks.visual.brandGuidelinesPdf')]),
         
-        // UPDATED: Replaced fragile .includes('Brand') fallback with direct translation key
         h('div', { class: 'px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 ' + (this.isDark ? 'bg-teal-600/15 border-teal-500/20 text-teal-400' : 'bg-teal-50 border-teal-200 text-teal-700') }, ['🖼️ ', this.t('howItWorks.visual.top10Posts')]),
         
-        // UPDATED: Replaced fragile .includes('Brand') fallback with direct translation key
         h('div', { class: 'px-3 py-1.5 rounded-lg border text-xs flex items-center gap-1.5 ' + (this.isDark ? 'bg-purple-600/15 border-purple-500/20 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-700') }, ['🎨 ', this.t('howItWorks.visual.brandColors')]),
       ]),
       h('div', { class: 'mt-4 p-3 rounded-lg border ' + (this.isDark ? 'bg-forge-950/60 border-white/5' : 'bg-white border-slate-200') }, [

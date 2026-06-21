@@ -9,12 +9,10 @@ const {
   incrementUsage,
 } = require("../middleware/subscription");
 
-// ── GET /api/subscription/usage — عرض الاستخدام الحالي ──────────────────────
 router.get("/usage", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
 
-     // ✅ التحقق من انتهاء الاشتراك المدفوع
     if (user.plan !== "free" && user.planEndsAt && new Date(user.planEndsAt) < new Date()) {
       user.plan = "free";
       user.planLimits = {
@@ -22,7 +20,7 @@ router.get("/usage", protect, async (req, res) => {
         advancedAnalytics: false, multiDialectSupport: false, automatedReels: false, prioritySupport: false
       };
       user.planEndsAt = null;
-      await user.save(); // حفظ التغييرات في قاعدة البيانات
+      await user.save(); 
     }
     
     res.json({
@@ -47,7 +45,6 @@ router.get("/usage", protect, async (req, res) => {
   }
 });
 
-// ── GET /api/subscription/plans — عرض الخطط المتاحة ─────────────────────────
 router.get("/plans", async (req, res) => {
   try {
     const plans = [
@@ -130,7 +127,6 @@ router.get("/plans", async (req, res) => {
   }
 });
 
-// ── POST /api/subscription/cancel — إلغاء الاشتراك ──────────────────────────
 router.post("/cancel", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -142,8 +138,6 @@ router.post("/cancel", protect, async (req, res) => {
       });
     }
 
-    // هنا ممكن نضيف logic لإلغاء الاشتراك من Stripe
-    // لكن الأفضل استخدام الـ Customer Portal (موجود في payment.js)
 
     res.json({
       success: true,
@@ -155,17 +149,15 @@ router.post("/cancel", protect, async (req, res) => {
   }
 });
 
-// ── POST /api/subscription/upgrade — ترقية الخطة ────────────────────────────
 router.post(
   "/upgrade",
   protect,
   checkPlan(["free", "pro"]),
   async (req, res) => {
     try {
-      const { planKey } = req.body; // e.g., 'pro_monthly', 'enterprise_annual'
+      const { planKey } = req.body; 
 
-      // هنا بنحول المستخدم لصفحة الـ Checkout
-      // الـ actual upgrade هيحصل في الـ webhook
+
       res.json({
         success: true,
         message: "Redirecting to checkout...",

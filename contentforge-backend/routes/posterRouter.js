@@ -9,18 +9,16 @@ const {
   getPosterHistory,
 } = require("../controllers/posterController");
 
-// POST /api/posters/generate
-// ✅ أضفنا checkPosterLimit قبل التوليد و incrementUsage بعده
+
 router.post(
   "/generate",
   protect,
-  checkPosterLimit, // 1. تحقق من الحد المسموح
-  upload.single("image"), // 2. ارفع الصورة
-  handleUploadError, // 3. تعامل مع أخطاء الرفع
-  createPoster, // 4. ولّد البوستر
+  checkPosterLimit, 
+  upload.single("image"), 
+  handleUploadError,
+  createPoster,
 );
 
-// GET /api/posters/history
 router.get("/history", protect, getPosterHistory);
 
 module.exports = router;

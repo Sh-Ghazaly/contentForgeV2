@@ -22,7 +22,6 @@ async function createNotification({ recipientId, recipientRole = 'user', type, t
       read: false,
     })
   } catch (err) {
-    // never crash the main flow because of a notification failure
     console.error('[Notification] Failed to create:', err.message)
   }
 }

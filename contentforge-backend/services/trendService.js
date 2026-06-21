@@ -1,13 +1,11 @@
 // services/trendService.js
-// بيجيب trending searches من Google Trends RSS feed
-// بيحفظ وقت آخر update في الـ DB نفسه — مش بيعتمد على setInterval
+
 
 const https = require("https");
 const { Trend } = require("../models");
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
-// ── Fetch RSS from Google Trends ──────────────────────────────────────────────
 function fetchRSS(url) {
   return new Promise((resolve, reject) => {
     https
@@ -20,7 +18,6 @@ function fetchRSS(url) {
   });
 }
 
-// ── Parse RSS XML ─────────────────────────────────────────────────────────────
 function parseRSS(xml) {
   const items = [];
   const itemRegex = /<item>([\s\S]*?)<\/item>/g;
@@ -55,7 +52,6 @@ function calcChange(traffic, rank) {
   return "+" + Math.max(50, 200 - rank * 15) + "%";
 }
 
-// ── Fetch from Google and save to DB ─────────────────────────────────────────
 async function fetchAndSaveTrends() {
   console.log("[TrendService] Fetching trends from Google Trends RSS...");
   const url = "https://trends.google.com/trending/rss?geo=EG";
@@ -144,34 +140,27 @@ async function saveFallbackTrends() {
   console.log("[TrendService] Saved fallback trends to DB");
 }
 
-// ── Smart scheduler: بيشوف وقت آخر update في الـ DB ─────────────────────────
-// لو السيرفر اتقفل ورجع تاني، بيشوف الـ DB ويحسب الوقت الباقي صح
 async function runIfDue() {
   try {
-    // جيب آخر trend اتحفظ في الـ DB
     const latest = await Trend.findOne({ region: "EG" }).sort({
       updatedAt: -1,
     });
 
     if (!latest) {
-      // الـ DB فاضي — اجيب فوراً
       await fetchAndSaveTrends();
     } else {
       const msSinceUpdate = Date.now() - new Date(latest.updatedAt).getTime();
 
       if (msSinceUpdate >= ONE_HOUR_MS) {
-        // فات أكتر من ساعة منذ آخر update في الـ DB
         console.log(
           `[TrendService] Last update was ${Math.round(msSinceUpdate / 60000)} min ago — fetching now`,
         );
         await fetchAndSaveTrends();
       } else {
-        // لسه في الساعة — استنى الوقت الباقي بس
         const waitMs = ONE_HOUR_MS - msSinceUpdate;
         console.log(
           `[TrendService] Trends are fresh — next update in ${Math.round(waitMs / 60000)} min`,
         );
-        // جدول الـ run الجاي بعد الوقت الباقي بالظبط
         setTimeout(runIfDue, waitMs);
         return;
       }
@@ -180,7 +169,6 @@ async function runIfDue() {
     console.error("[TrendService] Scheduler check failed:", err.message);
   }
 
-  // بعد ما الـ fetch يخلص، جدول الـ run الجاي بعد ساعة كاملة
   setTimeout(runIfDue, ONE_HOUR_MS);
 }
 

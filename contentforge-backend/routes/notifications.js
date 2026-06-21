@@ -4,8 +4,6 @@ const auth     = require('../middleware/auth')
 const adminAuth = require('../middleware/adminAuth')
 const { Notification, User } = require('../models')
 
-// ── GET /api/notifications
-// Returns notifications for the logged-in user (or admin)
 router.get('/', auth, async (req, res) => {
   try {
     const notifs = await Notification.find({ recipient: req.user._id })
@@ -21,8 +19,7 @@ router.get('/', auth, async (req, res) => {
   }
 })
 
-// ── PATCH /api/notifications/:id/read
-// Mark a single notification as read
+
 router.patch('/:id/read', auth, async (req, res) => {
   try {
     await Notification.findOneAndUpdate(
@@ -35,8 +32,7 @@ router.patch('/:id/read', auth, async (req, res) => {
   }
 })
 
-// ── PATCH /api/notifications/read-all
-// Mark all notifications as read for the logged-in user
+r
 router.patch('/read-all', auth, async (req, res) => {
   try {
     await Notification.updateMany(
@@ -49,8 +45,6 @@ router.patch('/read-all', auth, async (req, res) => {
   }
 })
 
-// ── DELETE /api/notifications/:id
-// Delete a single notification
 router.delete('/:id', auth, async (req, res) => {
   try {
     await Notification.findOneAndDelete({ _id: req.params.id, recipient: req.user._id })

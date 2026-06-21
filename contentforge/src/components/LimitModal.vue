@@ -86,7 +86,6 @@ const router = useRouter()
 const { t } = useI18n()
 const { isVisible, modalData, hide } = useLimitModal()
 
-// ✅ أيقونة ديناميكية حسب نوع الـ modal
 const icon = computed(() => {
   const icons = {
     trial_expired: '⏰',
@@ -99,7 +98,6 @@ const icon = computed(() => {
   return icons[modalData.value.type] || '⚠️'
 })
 
-// ✅ لون الأيقونة ديناميكي
 const iconClass = computed(() => {
   const classes = {
     trial_expired: 'bg-amber-500/15 text-amber-400',
@@ -112,13 +110,11 @@ const iconClass = computed(() => {
   return classes[modalData.value.type] || 'bg-amber-500/15 text-amber-400'
 })
 
-// ✅ Upgrade Plan → يوجه لصفحة /payment
 function upgradePlan() {
   hide()
   router.push('/payment')
 }
 
-// ✅ Resubscription → يوجه لـ Stripe Portal (لو عنده اشتراك سابق)
 async function resubscribe() {
   hide()
   try {
@@ -126,7 +122,6 @@ async function resubscribe() {
     const url = await paymentApi.openPortal()
     window.location.href = url
   } catch (err) {
-    // لو مفيش اشتراك سابق، يوجه لصفحة /payment
     console.warn('No active subscription, redirecting to /payment')
     router.push('/payment')
   }

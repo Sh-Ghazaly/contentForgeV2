@@ -6,7 +6,7 @@
         class="px-4 sm:px-6 py-3 sm:py-4 border-b flex flex-col sm:flex-row sm:items-center sm:justify-between sticky top-0 z-10 theme-glass gap-3"
         style="border-color: var(--border)"
       >
-        <!-- ROW 1: Title and Date Range (Tuck inside a row wrapper that handles mobile distribution) -->
+        <!-- Title and Date Range  -->
         <div class="flex items-center justify-between sm:contents w-full">
           <div class="min-w-0">
             <h1
@@ -24,8 +24,7 @@
           </div>
         </div>
 
-        <!-- ROW 2 (Mobile): Action Buttons -->
-        <!-- Using flex-row-reverse globally keeps the green check/actions consistently ordered relative to the language direction, while self-end / sm:justify-end handles proper container placement -->
+        <!-- (Mobile): Action Buttons -->
         <div
           class="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap self-end sm:self-auto justify-end flex-row"
         >
@@ -185,7 +184,7 @@
             </span>
           </button>
 
-          <!-- Add Post button — يظهر بس لو في calendar ومتناسق مع باقي الزراير في الهوفر -->
+          <!-- Add Post button -->
           <button
             v-if="currentCalendar"
             @click="showAddPostModal = true"
@@ -704,7 +703,6 @@
                         />
                       </svg>
 
-                      <!-- Localized Platform Name -->
                       {{ t(`dashboard.platformName.${p}`) }}
                     </button>
                   </div>
@@ -1622,14 +1620,12 @@ import { useCalendarStore } from "../stores/calendarStore";
 
 const { t, locale } = useI18n();
 
-// ── State ─────────────────────────────────────────────────────────────────────
 const brandId = ref(localStorage.getItem("cf_brandId") || "");
 const activeFilter = ref("All");
 const selectedPost = ref(null);
 const editCopy = ref("");
 const activeModalTab = ref("edit");
 
-// Publish State
 const publishing = ref(false);
 const publishMsg = ref("");
 const showPublishConfirm = ref(false);
@@ -1639,9 +1635,8 @@ const pendingPublishPlatform = ref(null);
 
 const showUsageWarning = ref(false);
 const remainingPostsCount = ref(0);
-let resolveUsageWarning = null; // دالة لحل الـ Promise
+let resolveUsageWarning = null;
 
-// Reset tab when opening a new post
 watch(selectedPost, (val) => {
   if (val) activeModalTab.value = "edit";
 });
@@ -1692,11 +1687,9 @@ const isTrendsAlwaysVisible = ref(window.innerWidth >= 1024);
 const addingPost = ref(false);
 const addPostError = ref("");
 
-// ── Drag & Drop state ─────────────────────────────────────────────────────
 const draggedCell = ref(null);
 const dragOverId = ref(null);
 
-// ── Toast system ───────────────────────────────────────────────────────────────
 const toasts = ref([]);
 let toastIdCounter = 0;
 function showToast(message, type = "success", duration = 4000) {
@@ -1708,7 +1701,6 @@ function removeToast(id) {
   toasts.value = toasts.value.filter((t) => t.id !== id);
 }
 
-// weekDays use i18n keys — reactive to locale switching
 const weekDays = computed(() => [
   t("dashboard.day.mon"),
   t("dashboard.day.tue"),
@@ -1719,7 +1711,6 @@ const weekDays = computed(() => [
   t("dashboard.day.sun"),
 ]);
 
-// Statuses: value stays English (used for API/logic), labelKey for display
 const statuses = [
   { value: "Draft", labelKey: "dashboard.statusDraft", dot: "bg-slate-500" },
   {
@@ -1753,7 +1744,6 @@ const platforms = ref([
   { name: "TikTok", labelKey: "dashboard.platformName.TikTok", on: false },
 ]);
 
-// Dialect select options — value stays English for API, labelKey for display
 const dialectOptions = [
   { value: "Egyptian Arabic", labelKey: "dashboard.dialect.egyptian" },
   { value: "Gulf Arabic", labelKey: "dashboard.dialect.gulf" },
@@ -1762,7 +1752,6 @@ const dialectOptions = [
   { value: "Bilingual AR+EN", labelKey: "dashboard.dialect.bilingual" },
 ];
 
-// ── Computed ──────────────────────────────────────────────────────────────────
 const topTrend = computed(() => trends.value[0] || null);
 
 const duration = computed(() => {
@@ -1782,7 +1771,6 @@ const durationLabel = computed(() => {
   });
 });
 
-// Re-built reactively based on Pinia store array state
 const calendarWeeks = computed(() => {
   const startStr = currentCalendar.value?.startDate || startDate.value;
   const endStr = currentCalendar.value?.endDate || endDate.value;
@@ -1860,7 +1848,6 @@ const calendarWeeks = computed(() => {
   return weeks;
 });
 
-// Refactored filters matching Option 1 properties
 const filteredWeeks = computed(() => {
   if (activeFilter.value === "All") return calendarWeeks.value;
   return calendarWeeks.value.map((week) => ({
@@ -1891,7 +1878,6 @@ const calendarDateRange = computed(() => {
   })}`;
 });
 
-// ── Helpers for dates ─────────────────────────────────────────────────────────
 function validateDates() {
   errorMessage.value = "";
   if (startDate.value && startDate.value < todayDate.value) {
@@ -1911,14 +1897,11 @@ watch(
   { immediate: true },
 );
 
-// ── Load on mount ─────────────────────────────────────────────────────────────
 onMounted(async () => {
-  // 1️⃣ تعيين مستمع لحجم الشاشة (كودك الحالي)
   window.addEventListener("resize", () => {
     isTrendsAlwaysVisible.value = window.innerWidth >= 1024;
   });
 
-  // 2️⃣ جلب الـ Trends (كودك الحالي)
   try {
     const data = await api.get("/trends");
     trends.value = data.trends.map((t) => ({
@@ -1932,22 +1915,19 @@ onMounted(async () => {
     console.error("Trends Fetch Error:", err);
   }
 
-  // 3️⃣ 🔥 الحل الجديد: جلب براندات اليوزر المسجل أولاً واستخراج الـ ID
   try {
     console.log("[Dashboard] Fetching user brands...");
     const brands = await brandApi.getMyBrands();
     
-    // نتحقق من أن اليوزر يمتلك براند واحد على الأقل مسجل باسمه
     if (brands && brands.length > 0) {
-      const activeBrand = brands[0]; // نأخذ البراند الأول المتاح له
-      brandId.value = activeBrand._id; // حفظ الـ ID في الـ ref الخاص بالصفحة
+      const activeBrand = brands[0]; 
+      brandId.value = activeBrand._id; 
       localStorage.setItem("cf_brandId", activeBrand._id);
       
       console.log(
         `[Dashboard] Found Active Brand: ${activeBrand.name} (ID: ${activeBrand._id})`,
       );
 
-      // 4️⃣ الآن نقوم بجلب الكالندر الخاص بهذا البراند بأمان
       const calendars = await calendarApi.getBrandCalendars(brandId.value);
       console.log("Fetched Calendars for this Brand:", calendars);
 
@@ -1962,14 +1942,12 @@ onMounted(async () => {
       console.warn(
         "[Dashboard] No brands associated with this logged-in user.",
       );
-      // هنا يمكنك توجيه المستخدم لصفحة إنشاء براند إذا كان النظام يتطلب ذلك أولاً
     }
   } catch (err) {
     console.error("[Dashboard Setup Error]:", err);
   }
 });
 
-// ── Usage Warning Functions ───────────────────────────────────────────────────────
 function showUsageConfirm(count) {
   return new Promise((resolve) => {
     remainingPostsCount.value = count;
@@ -1994,7 +1972,6 @@ function cancelUsageWarning() {
   }
 }
 
-// ── Generate / Regenerate ─────────────────────────────────────────────────────
 function openRegenerate() {
   isRegenerate.value = true;
   showModal.value = true;
@@ -2008,7 +1985,6 @@ async function doGenerate() {
   loadingCalendar.value = true;
   showModal.value = false;
 
-  // ✅ تحقق من الـ remaining posts قبل الـ generate
   try {
     const usageData = await subscriptionApi.getUsage();
     const remainingPosts =
@@ -2020,7 +1996,6 @@ async function doGenerate() {
     }
 
     if (remainingPosts < 5) {
-      // اعرض تحذير لو العدد قليل
       const shouldContinue = await showUsageConfirm(remainingPosts);
       if (!shouldContinue) {
         return;
@@ -2062,7 +2037,6 @@ async function doGenerate() {
   }
 }
 
-// ── Approve Plan ──────────────────────────────────────────────────────────────
 async function approvePlan() {
   if (!currentCalendar.value) return;
   approving.value = true;
@@ -2078,7 +2052,6 @@ async function approvePlan() {
   }
 }
 
-// ── Delete Calendar ───────────────────────────────────────────────────────────
 function confirmDelete() {
   showDeleteConfirm.value = true;
 }
@@ -2100,7 +2073,6 @@ async function deleteCalendar() {
   }
 }
 
-// ── Reset Calendar ────────────────────────────────────────────────────────────
 function confirmReset() {
   showResetConfirm.value = true;
 }
@@ -2122,7 +2094,6 @@ async function resetCalendar() {
   }
 }
 
-// ── Create Post manually ──────────────────────────────────────────────────────────
 function todayStr() {
   const today = new Date();
   return today.toISOString().split("T")[0];
@@ -2163,7 +2134,6 @@ async function createPost() {
 
     const created = await postsApi.createPost(payload);
 
-    // نضمن إن الـ created object عنده date string بصيغة YYYY-MM-DD
     if (
       !created.date &&
       (created.scheduledAt || created.scheduledDate || payload.scheduledDate)
@@ -2173,19 +2143,16 @@ async function createPost() {
       created.date = new Date(raw).toISOString().split("T")[0];
     }
 
-    // ✅ تحديث الـ Store بالـ post الجديد
     if (store.posts) {
       store.posts = [...store.posts, created];
     } else {
       store.posts = [created];
     }
 
-    // ✅ تحديث currentCalendar.posts
     if (currentCalendar.value) {
       if (!currentCalendar.value.posts) currentCalendar.value.posts = [];
       currentCalendar.value.posts.push(created);
       
-      // 🔥 تحديث endDate لو تاريخ البوست أكبر
       const postDate = new Date(payload.scheduledDate);
       const currentEndDate = new Date(currentCalendar.value.endDate);
       
@@ -2220,7 +2187,6 @@ function resetNewPost() {
   addPostError.value = "";
 }
 
-// ── Build weeks grid ──────────────────────────────────────────────────────────
 function buildWeeks(posts) {
   if (!currentCalendar.value || !posts) return [];
   const start = new Date(currentCalendar.value.startDate);
@@ -2312,15 +2278,12 @@ function statusToClass(status) {
       return "bg-green-500/10 border-green-500/20 text-green-400";
 
     case "scheduled":
-      // المجدول: أزرق سيان ناصع
       return "bg-cyan-500/10 border-cyan-500/20 text-cyan-400";
 
     case "published":
-      // المنشور: تم التغيير إلى البنفسجي المضيء ليكون واضحاً ومختلفاً عن المجدول
       return "bg-indigo-500/15 border-indigo-500/25 text-indigo-300";
 
     case "pending":
-      // الانتظار: تم التغيير إلى البرتقالي/الذهبي الواضح ليفترق عن الرمادي
       return "bg-amber-500/10 border-amber-500/20 text-amber-400";
 
     case "draft":
@@ -2329,7 +2292,6 @@ function statusToClass(status) {
   }
 }
 
-// 3. تحديث تأثير الـ Hover المتناسق مع الألوان الجديدة
 function getHoverStatusClass(status) {
   if (!status) return "";
 
@@ -2339,10 +2301,8 @@ function getHoverStatusClass(status) {
     case "scheduled":
       return "hover:bg-cyan-500/20 hover:border-cyan-500/60 hover:shadow-cyan-500/10";
     case "published":
-      // هوفر ناصع جداً للمنشور
       return "hover:bg-indigo-500/25 hover:border-indigo-400/70 hover:shadow-indigo-500/15 hover:brightness-110";
     case "pending":
-      // هوفر دافئ ومضيء للانتظار
       return "hover:bg-amber-500/20 hover:border-amber-400/60 hover:shadow-amber-500/10";
     case "draft":
     default:
@@ -2350,7 +2310,6 @@ function getHoverStatusClass(status) {
   }
 }
 
-// ── Post editor ───────────────────────────────────────────────────────────────
 function selectPost(post) {
   selectedPost.value = post;
   editCopy.value = post.copyAR || post.copy || post.text || "";
@@ -2395,7 +2354,6 @@ async function savePost() {
   }
 }
 
-// ── Publish post ───────────────────────────────────────────────────────────────
 async function publishPost() {
   if (!selectedPost.value) return;
   const platform = selectedPost.value.platform;
@@ -2409,7 +2367,6 @@ async function publishPost() {
   const scheduledDay = postDate ? String(postDate).substring(0, 10) : null;
   const postId = selectedPost.value._id || selectedPost.value.id;
 
-  // Wrong date → show custom confirm modal
   if (scheduledDay && scheduledDay !== today) {
     publishConfirmDate.value = new Date(
       scheduledDay + "T12:00:00",
@@ -2424,7 +2381,6 @@ async function publishPost() {
     return;
   }
 
-  // Today's post → publish directly
   await doPublish(postId, platform);
 }
 
@@ -2469,7 +2425,6 @@ function cancelPublish() {
   pendingPublishPlatform.value = null;
   publishConfirmDate.value = "";
 }
-// ── A/B Variant ───────────────────────────────────────────────────────────────
 
 async function generateVariantB() {
   if (!selectedPost.value) return;
@@ -2479,7 +2434,6 @@ async function generateVariantB() {
     const postId = selectedPost.value._id || selectedPost.value.id;
     const r = await postsApi.generateVariantB(postId);
 
-    // فحص ذكي جدا لشكل الـ Response وحقنه داخل الكائن ليتطابق مع طريقة العرض
     if (r && typeof r === "object") {
       variantB.value = {
         copyAR: r.copyAR || r.text || r.copy || r.output || "",
@@ -2512,7 +2466,6 @@ async function applyVariantB() {
 
   const postId = selectedPost.value._id || selectedPost.value.id;
 
-  // تحديث الـ Store بالـ Copy الجديد فوراً
   store.posts = store.posts.map((p) =>
     p._id === postId || p.id === postId
       ? {
@@ -2532,7 +2485,6 @@ async function applyVariantB() {
   }
 }
 
-// ── Generate Image ────────────────────────────────────────────────────────────
 async function generateImage() {
   if (!selectedPost.value) return;
   generatingImage.value = true;
@@ -2557,14 +2509,12 @@ async function generateImage() {
   }
 }
 
-// ── Inject trend ──────────────────────────────────────────────────────────────
 function injectTrend() {
   if (!selectedPost.value || !trends.value[0]) return;
   const tag = trends.value[0].tag;
   if (!editCopy.value.includes(tag)) editCopy.value += " " + tag;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function platformBadge(p) {
   return (
     {
@@ -2577,7 +2527,6 @@ function platformBadge(p) {
   );
 }
 
-// 2. تحديث ألوان نقطة الحالة والنص السفلي (Status Dot)
 function statusColor(status) {
   if (!status) return "text-slate-400";
   switch (status.toLowerCase()) {
@@ -2586,16 +2535,15 @@ function statusColor(status) {
     case "scheduled":
       return "text-cyan-400";
     case "published":
-      return "text-indigo-400"; // تفتيح المنشور
+      return "text-indigo-400";
     case "pending":
-      return "text-amber-400"; // تمييز الانتظار
+      return "text-amber-400";
     case "draft":
     default:
       return "text-slate-400";
   }
 }
 
-// ── Drag & Drop Handlers ───────────────────────────────────────────────────
 function onDragStart(cell) {
   draggedCell.value = cell;
 }
@@ -2691,12 +2639,9 @@ async function onDrop(targetCell) {
   display: none;
 }
 
-/* إخفاء شريط التمرير لمتصفح فايرفوكس وإنترنت إكسبلورر */
 .no-scrollbar {
   -ms-overflow-style: none;
-  /* IE and Edge */
   scrollbar-width: none;
-  /* Firefox */
 }
 
 .fade-enter-active,

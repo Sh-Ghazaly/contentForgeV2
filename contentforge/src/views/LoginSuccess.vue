@@ -23,7 +23,6 @@
 
   onMounted(async () => {
     const token = route.query.token;
-    // const provider = route.query.provider;
     const error = route.query.error;
 
     if (error) {
@@ -33,10 +32,8 @@
 
     if (token) {
       try {
-        // Store token and fetch user data
         localStorage.setItem("cf_token", token);
 
-        // Fetch user profile using the token
         const response = await fetch(
           `${import.meta.env.VITE_API_URL || "https://content-forge-v2.vercel.app/api"}/auth/me`,
           {
@@ -50,7 +47,6 @@
 
         const userData = await response.json();
 
-        // Store user data
         localStorage.setItem(
           "cf_user",
           JSON.stringify({
@@ -63,12 +59,10 @@
           }),
         );
 
-        // Update auth store
         authStore.token = token;
         authStore.user = userData;
 
 
-        // ✅ Retrieve pending redirect from sessionStorage (saved by SocialLoginButtons)
         let pendingRedirect = null;
         const stored = sessionStorage.getItem('pending_auth_redirect');
         if (stored) {
@@ -81,7 +75,6 @@
         const targetRedirect = route.query.redirect || pendingRedirect?.redirect;
 
 
-        // Redirect based on user state
         if (userData.isAdmin) {
           router.push("/admin");
         } else if (
@@ -91,15 +84,13 @@
         ) {
           router.push("/trial-expired");
         } else if (targetPlan && targetPlan !== 'free' && targetBilling) {
-          // ✅ ONLY redirect to Stripe if it's a PAID plan
           try {
             const { default: paymentApi } = await import("../api/paymentApi.js");
             const url = await paymentApi.checkout(`${targetPlan}_${targetBilling}`, { from: "social_login" });
             if (url) { window.location.href = url; return; }
           } catch (e) { console.error("Checkout failed:", e); }
-          router.push("/dashboard"); // Fallback if Stripe fails
+          router.push("/dashboard"); 
         } else {
-          // ✅ Normal flow (Free plan, Get Started, or direct login)
           if (targetRedirect && typeof targetRedirect === 'string' && targetRedirect.startsWith('/')) {
             router.push(targetRedirect);
           } else {

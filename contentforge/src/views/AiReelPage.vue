@@ -190,9 +190,6 @@ async function notifyMe() {
 </script>
 
 <style scoped>
-/* ============================================
-   DARK MODE (default)
-   ============================================ */
 .ai-reels-page {
   --page-bg: #0a0a0a;
   --card-bg: #141414;
@@ -212,9 +209,7 @@ async function notifyMe() {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-/* ============================================
-   LIGHT MODE - uses .is-light class on root
-   ============================================ */
+
 .ai-reels-page.is-light {
   --page-bg: #f8fafc;
   --card-bg: #ffffff;
@@ -226,9 +221,7 @@ async function notifyMe() {
   --shadow-card: 0 10px 40px -10px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-/* ============================================
-   HEADER
-   ============================================ */
+
 .page-header {
   margin-bottom: 1.5rem;
 }
@@ -247,9 +240,7 @@ async function notifyMe() {
   color: var(--text-primary);
 }
 
-/* ============================================
-   MAIN CONTAINER
-   ============================================ */
+
 .coming-soon-container {
   flex: 1;
   display: flex;
@@ -286,9 +277,7 @@ async function notifyMe() {
   background: linear-gradient(90deg, #f59e0b, #f97316);
 }
 
-/* ============================================
-   ANIMATED ICON
-   ============================================ */
+
 .icon-wrapper {
   position: relative;
   width: 120px;
@@ -348,9 +337,7 @@ async function notifyMe() {
   box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
 }
 
-/* ============================================
-   BADGES
-   ============================================ */
+
 .soon-badge {
   display: inline-flex;
   align-items: center;
@@ -404,9 +391,7 @@ async function notifyMe() {
   50% { opacity: 0.4; }
 }
 
-/* ============================================
-   TYPOGRAPHY
-   ============================================ */
+
 .coming-soon-title {
   font-size: 28px;
   font-weight: 700;
@@ -439,9 +424,6 @@ async function notifyMe() {
   max-width: 420px;
 }
 
-/* ============================================
-   LOCKED FEATURES LIST
-   ============================================ */
 .locked-features {
   display: flex;
   flex-direction: column;
@@ -475,9 +457,7 @@ async function notifyMe() {
   flex-shrink: 0;
 }
 
-/* ============================================
-   UPGRADE BUTTON
-   ============================================ */
+
 .upgrade-btn {
   display: inline-flex;
   align-items: center;
@@ -498,9 +478,7 @@ async function notifyMe() {
   box-shadow: 0 6px 30px rgba(245, 158, 11, 0.3);
 }
 
-/* ============================================
-   FEATURE TAGS
-   ============================================ */
+
 .feature-tags {
   display: flex;
   flex-wrap: wrap;
@@ -525,9 +503,7 @@ async function notifyMe() {
   border-color: rgba(139, 92, 246, 0.12);
 }
 
-/* ============================================
-   NOTIFY SECTION
-   ============================================ */
+
 .notify-section {
   margin-bottom: 24px;
 }
@@ -608,9 +584,7 @@ async function notifyMe() {
   margin-top: 8px;
 }
 
-/* ============================================
-   TIMELINE BADGE
-   ============================================ */
+
 .timeline-badge {
   display: inline-flex;
   align-items: center;
@@ -630,9 +604,7 @@ async function notifyMe() {
   border-color: rgba(59, 130, 246, 0.12);
 }
 
-/* ============================================
-   LOADING SPINNER
-   ============================================ */
+
 .spin {
   width: 16px;
   height: 16px;
@@ -643,9 +615,7 @@ async function notifyMe() {
   to { transform: rotate(360deg); }
 }
 
-/* ============================================
-   TRANSITIONS
-   ============================================ */
+
 .fade-up-enter-active,
 .fade-up-leave-active {
   transition: all 0.3s ease;
@@ -657,9 +627,7 @@ async function notifyMe() {
   transform: translateY(10px);
 }
 
-/* ============================================
-   RESPONSIVE
-   ============================================ */
+
 @media (max-width: 640px) {
   .ai-reels-page {
     padding: 1rem;

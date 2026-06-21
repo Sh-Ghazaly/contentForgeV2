@@ -3,7 +3,6 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// ── On Vercel the filesystem is read-only except for /tmp ─────────────────────
 const isVercel = process.env.VERCEL === "1";
 const uploadDir = isVercel
   ? "/tmp/uploads/posters"
@@ -16,10 +15,8 @@ function ensureDirExists(dirPath) {
   }
 }
 
-// Create directory on module load
 ensureDirExists(uploadDir);
 
-// ── Storage configuration ─────────────────────────────────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     ensureDirExists(uploadDir);
@@ -32,7 +29,6 @@ const storage = multer.diskStorage({
   },
 });
 
-// ── File filter — images only ─────────────────────────────────────────────────
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
   if (allowedTypes.includes(file.mimetype)) {
@@ -45,17 +41,15 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// ── Multer instance ───────────────────────────────────────────────────────────
 const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+    fileSize: 10 * 1024 * 1024,
     files: 1,
   },
 });
 
-// ── Error handling wrapper ────────────────────────────────────────────────────
 function handleUploadError(err, req, res, next) {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {

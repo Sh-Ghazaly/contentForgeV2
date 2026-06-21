@@ -3,19 +3,15 @@ const router = express.Router();
 const protect = require("../middleware/auth");
 const { Brand, Calendar, Post } = require("../models");
 
-// GET /s — sidebar quick stats for the logged-in user
 router.get("/", protect, async (req, res) => {
   try {
     const userId = req.user._id;
 
-    // كل البراندز بتاعت اليوزر
     const brands = await Brand.find({ user: userId }).select("_id");
     const brandIds = brands.map((b) => b._id);
 
-    // عدد الكالندرز
     const calendars = await Calendar.countDocuments({ user: userId });
 
-    // إحصائيات البوستات حسب الستاتس
     const [generated, approved, scheduled, published, drafts] =
       await Promise.all([
         Post.countDocuments({ brand: { $in: brandIds } }),

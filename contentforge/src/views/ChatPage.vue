@@ -263,7 +263,6 @@ const { locale } = useLang()
 const { t } = useI18n();
 
 
-// ── State ─────────────────────────────────────────────────────────────────────
 const input = ref("");
 const isTyping = ref(false);
 const showUpload = ref(false);
@@ -271,7 +270,6 @@ const attachedFiles = ref([]);
 const pendingFiles = ref([]);
 const msgContainer = ref(null);
 const messages = ref([]);
-// const sessionFiles = ref([]);
 const currentBrand = ref(null);
 const brandLoaded = ref(false);
 const ragChunks = ref(0);
@@ -279,22 +277,18 @@ const userInitial = ref("U");
 const contextOpen = ref(false);
 const isLargeScreen = ref(window.innerWidth >= 1024);
 
-// ✅ Persist conversationId across page refreshes within the same tab session
 const storedConvId = sessionStorage.getItem("cf_conversationId") || crypto.randomUUID();
 sessionStorage.setItem("cf_conversationId", storedConvId);
 const conversationId = ref(storedConvId);
 
-// Past conversations list for the sidebar
 const pastConversations = ref([]);
 
-// chat history نبعته للـ API عشان Gemini يتذكر المحادثة
 const chatHistory = ref([]);
 
 function onResize() { isLargeScreen.value = window.innerWidth >= 1024 }
 onMounted(() => window.addEventListener('resize', onResize))
 onUnmounted(() => window.removeEventListener('resize', onResize))
 
-// ── Brand context — labelKey instead of hardcoded label ───────────────────────
 const brandContext = computed(() => {
   if (!currentBrand.value) return [];
   return [
@@ -305,7 +299,6 @@ const brandContext = computed(() => {
   ];
 });
 
-// ── Suggestions & quick prompts — i18n key objects ────────────────────────────
 const suggestions = [
   { key: "chat.suggestion1" },
   { key: "chat.suggestion2" },
@@ -324,113 +317,12 @@ const quickPrompts = [
   { key: "chat.prompt6" },
 ];
 
-// ── Load brand on mount ───────────────────────────────────────────────────────
-// onMounted(async () => {
-//   // جيب الـ user initial من الـ auth
-//   try {
-//     const me = await api.get("/auth/me");
-//     userInitial.value = me?.user?.name?.charAt(0).toUpperCase() || "U";
-//   } catch {}
-
-//   // جيب الـ brand
-//   let brandId = null;
-//   try {
-//     const brands = await brandApi.getMyBrands();
-//     if (brands?.length) {
-//       currentBrand.value = brands[0];
-//       brandLoaded.value = true;
-//       ragChunks.value = brands[0].ragChunks?.length || 0;
-//       brandId = brands[0]._id.toString(); // ✅ ensure plain string, not ObjectId object
-//       localStorage.setItem("cf_brandId", brandId);
-//     }
-//   } catch {}
-
-//   // ✅ Load existing messages for the current conversationId
-//   try {
-//     if (brandId) {
-//       const { messages: history } = await api.get(
-//         `/chat/history/${conversationId.value}`
-//       );
-//       if (history?.length) {
-//         messages.value = history.map((m) => ({
-//           id: m._id,
-//           role: m.sender, // "user" | "ai"
-//           time: new Date(m.createdAt).toLocaleTimeString([], {
-//             hour: "2-digit",
-//             minute: "2-digit",
-//           }),
-//           content: m.content,
-//         }));
-//       }
-//     }
-//   } catch {}
-
-//   // ✅ Load past conversations list for the sidebar
-//   // try {
-//     if (brandId) {
-//       // 1. Show cached conversations instantly from localStorage
-//       const cached = localStorage.getItem("cf_conversations");
-//       if (cached) {
-//         try {
-//           pastConversations.value = JSON.parse(cached);
-//         } 
-//         catch {
-//           pastConversations.value = [];
-//         }
-//       }
-
-//       // 2. Fetch fresh from API and update both UI + localStorage
-//           try {
-//         const { conversations } = await api.get(
-//           `/chat/conversations/${brandId}`
-//         );
-
-//         if (conversations?.length) {
-//           pastConversations.value = conversations;
-
-//           // update cache
-//           localStorage.setItem(
-//             "cf_conversations",
-//             JSON.stringify(conversations)
-//           );
-//         }
-//       } catch (err) {
-//         console.error("Failed to refresh conversations", err);
-//       }
-//     }
-
-//   // Show welcome message only if no history was loaded
-//   if (messages.value.length === 0) {
-//     if (brandLoaded.value) {
-//       messages.value.push({
-//         id: 1,
-//         role: "ai",
-//         time: now(),
-//         content: `مرحباً! I'm your ContentForge AI — I have your **${
-//           currentBrand.value.name
-//         }** brand voice loaded (${
-//           currentBrand.value.dialects?.[0] || "Arabic"
-//         }). Ask me to generate posts, plan a campaign, or analyze your content.`,
-//       });
-//     } else {
-//       messages.value.push({
-//         id: 1,
-//         role: "ai",
-//         time: now(),
-//         content:
-//           "مرحباً! I'm ContentForge AI. It looks like you haven't set up your Brand Vault yet. Head to the Brand Vault page to upload your brand guidelines and get personalized content.",
-//       });
-//     }
-//   }
-// });
-
 onMounted(async () => {
 
   window.addEventListener('resize', onResize)
 
   let brandId = localStorage.getItem("cf_brandId");
 
-  // 🧠 1. LOAD CACHE FIRST (always instant)
   const cacheKey = `cf_conversations_${brandId}`;
 
   const cached = localStorage.getItem(cacheKey);
@@ -442,7 +334,6 @@ onMounted(async () => {
     }
   }
 
-  // 🧠 2. IF NO BRAND → fetch brand
   if (!brandId) {
     try {
       const brands = await brandApi.getMyBrands();
@@ -455,7 +346,6 @@ onMounted(async () => {
     } catch { }
   }
 
-  // 🧠 3. FETCH LATEST FROM API
   if (brandId) {
     try {
       const { conversations } = await api.get(
@@ -473,7 +363,6 @@ onMounted(async () => {
     }
   }
 });
-// ── Send message → Gemini API ─────────────────────────────────────────────────
 async function sendMessage() {
   if (!input.value.trim() && !attachedFiles.value.length) return;
 
@@ -524,7 +413,6 @@ async function sendMessage() {
   }
 }
 
-// ── Load a past conversation ──────────────────────────────────────────────────
 async function loadConversation(id) {
   conversationId.value = id;
   sessionStorage.setItem("cf_conversationId", id);
@@ -542,7 +430,6 @@ async function loadConversation(id) {
   } catch { }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function sendSuggestion(s) {
   input.value = s;
   sendMessage();
@@ -605,24 +492,6 @@ function handleModalUpload(e) {
 function handleDrop(e) {
   [...e.dataTransfer.files].forEach((f) => pendingFiles.value.push(f.name));
 }
-
-// async function confirmUpload() {
-//   // أضيف للـ session files
-//   pendingFiles.value.forEach((n) =>
-//     sessionFiles.value.unshift({ name: n, size: "—", icon: "📄" })
-//   );
-
-//   // لو في brandId ارفع للـ backend
-//   const brandId = localStorage.getItem("cf_brandId");
-//   if (brandId && pendingFiles.value.length) {
-//     try {
-//       await brandApi.uploadGuidelines(brandId, pendingFiles.value[0]);
-//     } catch {}
-//   }
-
-//   pendingFiles.value = [];
-//   showUpload.value = false;
-// }
 </script>
 
 <style scoped>

@@ -29,7 +29,6 @@ import AdminSettings from "./views/admin/AdminSettings.vue";
 import LoginSuccessPage from "./views/LoginSuccess.vue";
 import AiReelsPage from "./views/AiReelPage.vue";
 
-// ── Router ────────────────────────────────────────────────────────────────────
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -99,7 +98,6 @@ const router = createRouter({
   },
 });
 
-// ── Route guard — redirect to login if not authenticated ──────────────────────
 router.beforeEach((to, from, next) => {
   const isLoggedIn = !!localStorage.getItem("cf_token");
   const user = JSON.parse(localStorage.getItem("cf_user") || "null");
@@ -113,17 +111,14 @@ router.beforeEach((to, from, next) => {
   }
 });
 
-// ── Persist theme on startup ──────────────────────────────────────────────────
 const saved = localStorage.getItem("cf-theme") || "dark";
 document.documentElement.classList.add(saved);
 
-// ── Mount app ─────────────────────────────────────────────────────────────────
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
 
-// ── Persist locale on startup ─────────────────────────────────────────────────
 const savedLocale = localStorage.getItem("cf-locale") || "en";
 i18n.global.locale.value = savedLocale;
 document.documentElement.setAttribute(

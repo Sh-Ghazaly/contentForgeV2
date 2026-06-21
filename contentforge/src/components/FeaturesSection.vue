@@ -96,7 +96,7 @@ const bigFeatures = [
     pointCount: 4,
     iconBg: 'bg-blue-500/15 text-blue-500 dark:text-blue-300',
     dotColor: 'bg-blue-500 dark:bg-blue-400',
-    glow: 'card-glow', // Ensure you have a .card-glow class in your global CSS if desired
+    glow: 'card-glow', 
   },
   {
     key: 'ragBrandVoice',

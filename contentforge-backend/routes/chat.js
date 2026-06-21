@@ -9,7 +9,6 @@ const { retrieveRelevantChunks } = require("../services/embeddingService");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ── GET /api/chat/history/:conversationId ─────────────────────────────────────
 router.get("/history/:conversationId", protect, async (req, res) => {
   try {
     const messages = await ChatMessage.find({
@@ -23,8 +22,7 @@ router.get("/history/:conversationId", protect, async (req, res) => {
   }
 });
 
-// ── GET /api/chat/conversations/:brandId ─────────────────────────────────────
-// Returns a list of all past conversations (grouped by conversationId) for a brand
+
 router.get("/conversations/:brandId", protect, async (req, res) => {
   try {
     const conversations = await ChatMessage.aggregate([
@@ -55,28 +53,24 @@ router.get("/conversations/:brandId", protect, async (req, res) => {
 
 
 
-// POST /api/chat
 router.post("/", protect, async (req, res) => {
   const { message, history, brandId ,conversationId } = req.body;
 
   if (!message) return res.status(400).json({ message: "message is required" });
 
   try {
-     // 1. حفظ رسالة المستخدم
     await ChatMessage.create({
       brand: brandId,
       conversationId,
       sender: "user",
       content: message,
     });
-    // 2. جيب الـ brand context
     let brandContext = "";
     let brand = null;
 
     if (brandId) {
       brand = await Brand.findById(brandId);
       if (brand) {
-        // جيب الـ RAG chunks المتعلقة بالرسالة
         const chunks = await retrieveRelevantChunks(brandId, message).catch(
           () => [],
         );
@@ -86,7 +80,6 @@ router.post("/", protect, async (req, res) => {
       }
     }
 
-    // 2. ابني الـ system prompt
     const systemPrompt = `You are ContentForge AI, an expert Arabic and bilingual content strategist.
 ${
   brand
@@ -110,31 +103,8 @@ RULES:
 - Keep responses concise and actionable
 - If asked to generate a calendar, remind the user to use the Calendar page for the full interactive experience`;
 
-    // 3. ابني الـ chat history للـ Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite", systemInstruction: systemPrompt });
 
-    // حول الـ history format من frontend لـ Gemini format
-    // const geminiHistory = (history || []).map((msg) => ({
-    //   role: msg.role === "user" ? "user" : "model",
-    //   parts: [{ text: msg.content }],
-    // }));
-    
-    // // ابدأ الـ chat مع الـ system prompt
-    // const chat = model.startChat({
-    //   history: [
-    //     { role: "user", parts: [{ text: systemPrompt }] },
-    //     {
-    //       role: "model",
-    //       parts: [
-    //         { text: "Understood! I'm ready to help as ContentForge AI." },
-    //       ],
-    //     },
-    //     ...geminiHistory,
-    //   ],
-    // });
-
-     // 5. Load history from DB (NOT frontend)
-    // ─────────────────────────────
     const dbHistory = await ChatMessage.find({
       brand: brandId,
       conversationId,
@@ -144,19 +114,15 @@ RULES:
       role: msg.sender === "user" ? "user" : "model",
       parts: [{ text: msg.content }],
     }));
-    // 6. Start chat
-    // ─────────────────────────────
+
     const chat = model.startChat({
       history: geminiHistory,
     });
 
-    // 4. ابعت الرسالة
     const result = await chat.sendMessage(message);
     const reply = result.response.text();
 
-    // ─────────────────────────────
-    // 8. حفظ رد AI في DB
-    // ─────────────────────────────
+
     await ChatMessage.create({
       brand: brandId,
       conversationId,
@@ -164,9 +130,6 @@ RULES:
       content: reply,
     });
 
-    // ─────────────────────────────
-    // 9. return response
-    // ─────────────────────────────
     res.json({ reply });
   } catch (err) {
     console.error("[Chat] Error:", err.message);

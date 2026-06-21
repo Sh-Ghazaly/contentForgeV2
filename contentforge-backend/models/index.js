@@ -2,7 +2,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
-// ── contact message ──────────────────────────────────────────────────────────────────────
 const contactMessageSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
@@ -21,11 +20,9 @@ const contactMessageSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// ── User ──────────────────────────────────────────────────────────────────────
 
 const userSchema = new mongoose.Schema(
   {
-    // 1. البيانات الأساسية للمستخدم
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     password: { type: String, required: true, minlength: 6 },
@@ -37,32 +34,27 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // 2. صلاحيات الحساب وحالته العامة
     isAdmin: { type: Boolean, default: false },
     isBlocked: { type: Boolean, default: false },
     lastLoginAt: { type: Date },
 
-    // 3. نظام التحقق وتفعيل الإيميل (OTP)
     isVerified: { type: Boolean, default: false },
     verificationCode: String,
     verificationCodeExpires: Date,
 
-    // 4. نظام الاشتراكات والباقات الموحد
     plan: {
       type: String,
       enum: ["free", "pro", "enterprise", ""],
       default: "free",
     },
-    // warningSentAt: { type: Date, default: null },
     subscriptionType: {
       type: String,
       enum: ["monthly", "yearly", "none"],
       default: "none",
     },
-    planEndsAt: { type: Date, default: null }, // التاريخ الموحد لانتهاء الصلاحية (Trial أو اشتراك مدفوع)//trialEndsAt
+    planEndsAt: { type: Date, default: null }, 
     stripeCustomerId: { type: String },
 
-    // 5. نظام تتبع الاستخدام (Usage Tracking)
     usage: {
       aiImagesGenerated: { type: Number, default: 0 },
       postsGenerated: { type: Number, default: 0 },
@@ -70,27 +62,23 @@ const userSchema = new mongoose.Schema(
       lastUsageReset: { type: Date, default: Date.now },
     },
 
-    // 6. حدود الخطة الحالية (Plan Limits)
     planLimits: {
-      maxAiImagesPerMonth: { type: Number, default: 3 }, // Free: 3, Pro: 30, Enterprise: Unlimited
-      maxPostsPerCalendar: { type: Number, default: 5 }, // Free: 5, Pro: 15, Enterprise: 30
-      maxCalendarsPerMonth: { type: Number, default: 1 }, // Free: 1, Pro: 5, Enterprise: Unlimited
-      maxBrands: { type: Number, default: 1 }, // Free: 1, Pro: 3, Enterprise: 10
+      maxAiImagesPerMonth: { type: Number, default: 3 }, 
+      maxPostsPerCalendar: { type: Number, default: 5 }, 
+      maxCalendarsPerMonth: { type: Number, default: 1 },
+      maxBrands: { type: Number, default: 1 },
       advancedAnalytics: { type: Boolean, default: false },
       multiDialectSupport: { type: Boolean, default: false },
       automatedReels: { type: Boolean, default: false },
       prioritySupport: { type: Boolean, default: false },
     },
-    // Add inside userSchema, alongside existing fields:
     googleId: { type: String, sparse: true, unique: true },
     facebookId: { type: String, sparse: true, unique: true },
     avatar: { type: String, default: null },
 
-    // حقول تتبع الـ Trial لمنع تكرار الاستخدام المجاني
     isTrial: { type: Boolean, default: true },
     hasUsedTrial: { type: Boolean, default: false },
 
-    // 7. نظام الرقابة وفترة السماح (Moderation & Grace Period)
     moderation: {
       blockStatus: {
         type: String,
@@ -103,10 +91,9 @@ const userSchema = new mongoose.Schema(
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         default: null,
-      }, // الآدمن المسؤول
+      }, 
     },
 
-    // 8. طلبات حذف الحساب
     deletionRequest: {
       isAsked: { type: Boolean, default: false },
       reason: { type: String, default: null },
@@ -114,44 +101,31 @@ const userSchema = new mongoose.Schema(
     },
   },
   { timestamps: true },
-); // لإنشاء createdAt و updatedAt تلقائياً
+);
 
-// ==========================================
-// 🛠️ الـ Indexes وقوانين الـ Database
-// ==========================================
-
-// حذف الحسابات غير المفعلة تلقائياً بعد 10 دقائق (600 ثانية) من وقت إنشائها
 userSchema.index(
-  { createdAt: 1 }, //trialStartDate
+  { createdAt: 1 },
   {
     expireAfterSeconds: 600,
     partialFilterExpression: { isVerified: false },
   },
 );
 
-// ==========================================
-//  تشفير وحماية الباسورد (Security Middleware)
-// ==========================================
 
-// 1. تشفير الباسورد تلقائياً قبل الحفظ في الـ DB (في حالة التسجيل أو التغيير فقط)
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
-// 2. دالة مخصصة للمقارنة والتحقق من صحة الباسورد عند تسجيل الدخول (Login)
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// ==========================================
-// تصدير الموديل (Export)
-// ==========================================
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;
 
-// models/Settings.js─────────────────────────────────────────────────────────────────────
 const platformSettingsSchema = new mongoose.Schema(
   {
     trialDays: { type: Number, default: 14 },
@@ -166,7 +140,6 @@ const PlatformSettings = mongoose.model(
   "PlatformSettings",
   platformSettingsSchema,
 );
-// ── Brand ─────────────────────────────────────────────────────────────────────
 const brandSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -195,7 +168,6 @@ const brandSchema = new mongoose.Schema(
 );
 const Brand = mongoose.model("Brand", brandSchema);
 
-// ── Post ──────────────────────────────────────────────────────────────────────
 const postSchema = new mongoose.Schema(
   {
     brand: {
@@ -226,7 +198,7 @@ const postSchema = new mongoose.Schema(
       enum: ["draft", "approved", "scheduled", "published"],
       default: "draft",
     },
-    metaPostId: { type: String }, // ← Meta's post ID after publishing
+    metaPostId: { type: String },
     scheduledAt: Date,
     publishedAt: Date,
   },
@@ -234,7 +206,6 @@ const postSchema = new mongoose.Schema(
 );
 const Post = mongoose.model("Post", postSchema);
 
-// ── Calendar ──────────────────────────────────────────────────────────────────
 const calendarSchema = new mongoose.Schema(
   {
     brand: {
@@ -261,7 +232,6 @@ const calendarSchema = new mongoose.Schema(
 );
 const Calendar = mongoose.model("Calendar", calendarSchema);
 
-// ── Original Calendar (snapshot for reset) ────────────────────────────────────
 const originalCalendarSchema = new mongoose.Schema(
   {
     calendarId: {
@@ -281,11 +251,10 @@ const OriginalCalendar = mongoose.model(
   originalCalendarSchema,
 );
 
-// ── Trend Model ───────────────────────────────────────────────────────────────
 const trendSchema = new mongoose.Schema(
   {
     tag: { type: String, required: true },
-    change: { type: String }, // e.g. "+340%"
+    change: { type: String }, 
     velocity: { type: Number, default: 0 },
     region: { type: String, default: "EG" },
     source: {
@@ -300,7 +269,6 @@ const trendSchema = new mongoose.Schema(
 
 const Trend = mongoose.model("Trend", trendSchema);
 
-// ── Chat Message Model ────────────────────────────────────────────────────────
 const chatMessageSchema = new mongoose.Schema(
   {
     brand: {
@@ -317,7 +285,6 @@ const chatMessageSchema = new mongoose.Schema(
 
 const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);
 
-// ── TopPost ───────────────────────────────────────────────────────────────────
 const TopPostSchema = new mongoose.Schema(
   {
     brand: {
@@ -354,11 +321,7 @@ const TopPostSchema = new mongoose.Schema(
 const TopPost = mongoose.model("TopPost", TopPostSchema);
 const ContactMessage = mongoose.model("ContactMessage", contactMessageSchema);
 
-// module.exports = { User, Brand, Post, Calendar, Trend, ChatMessage, OriginalCalendar, TopPost, PlatformSettings, ContactMessage }
 
-// // وأضيفيها في الـ exports
-// module.exports = { User, Brand, Post, Calendar, Trend, ChatMessage, OriginalCalendar}
-// ── Connection ────────────────────────────────────────────────────────────────
 const connectionSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -377,20 +340,8 @@ const connectionSchema = new mongoose.Schema(
 
 const Connection = mongoose.model("Connection", connectionSchema);
 
-// ── Notification ──────────────────────────────────────────────────────────────
-// const notificationSchema = new mongoose.Schema({
-//   user:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-//   title:   { type: String, required: true },
-//   message: { type: String, required: true },
-//   type:    { type: String, enum: ['scheduled_today', 'scheduled_tomorrow', 'info'], default: 'info' },
-//   read:    { type: Boolean, default: false },
-//   postId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
-// }, { timestamps: true })
-
-// const Notification = mongoose.model('Notification', notificationSchema)
 const notificationSchema = new mongoose.Schema(
   {
-    // who receives this notification
     recipient: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -404,14 +355,12 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
-        // → admin receives these (user did something)
         "new_login",
         "new_brand",
         "subscription_changed",
         "contact_message",
         "deletion_request",
         "illegal_action",
-        // → user receives these (admin did something)
         "plan_updated",
         "trial_extended",
         "account_blocked",
@@ -419,7 +368,6 @@ const notificationSchema = new mongoose.Schema(
         "admin_settings_changed",
         "policy_warning",
         "admin_promotion",
-        // → cron/system
         "scheduled_today",
         "scheduled_tomorrow",
         "info",
@@ -429,7 +377,7 @@ const notificationSchema = new mongoose.Schema(
 
     read: { type: Boolean, default: false },
     postId: { type: mongoose.Schema.Types.ObjectId, ref: "Post" },
-    meta: { type: Object, default: {} }, // any extra data (brandName, planName, etc.)
+    meta: { type: Object, default: {} }, 
   },
   { timestamps: true },
 );

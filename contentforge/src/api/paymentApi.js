@@ -2,19 +2,16 @@
 import api from './client'
 
 export default {
-  // فتح Stripe Checkout للاشتراك
   async checkout(planKey) {
     const data = await api.post('/payment/checkout', { planKey })
-    return data.url   // redirect to Stripe
+    return data.url  
   },
 
-  // فتح Stripe Customer Portal (إدارة / إلغاء)
   async openPortal() {
     const data = await api.post('/payment/portal')
     return data.url
   },
 
-  // جلب حالة الاشتراك الحالية
   async getStatus() {
     return await api.get('/payment/status')
   },

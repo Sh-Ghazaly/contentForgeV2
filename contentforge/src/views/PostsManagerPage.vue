@@ -130,7 +130,7 @@
             selected.includes(post.id) ? 'border-blue-500/40 bg-blue-500/5' : ''
           "
         >
-          <!-- Card Body Wrapper — تدمج المحتوى والصورة في تصميم مرن -->
+          <!-- Card Body Wrapper-->
           <div
             class="flex flex-col lg:flex-row lg:items-stretch justify-between"
           >
@@ -275,7 +275,6 @@
               </div>
             </div>
 
-            <!-- Right Side: Beautifully integrated Image Preview -->
             <div
               v-if="post.imageUrl"
               class="p-4 lg:p-5 lg:pl-0 flex items-center justify-center lg:w-[320px] shrink-0"
@@ -350,7 +349,7 @@
       </div>
     </div>
 
-    <!-- ── Edit Modal ── -->
+    <!-- Edit Modal -->
     <div
       v-if="editingPost"
       class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-6"
@@ -560,7 +559,6 @@ import postsApi from "../api/postsApi.js";
 
 const { t } = useI18n();
 
-// ── State ─────────────────────────────────────────────────────────────────────
 const loading = ref(false);
 const saving = ref(false);
 const activeFilter = ref("All");
@@ -589,12 +587,10 @@ const platformOptions = [
 
 const statusOptions = [
   { value: "Draft", labelKey: "posts.status.Draft" },
-  // { value: "Pending", labelKey: "posts.status.Pending" },
   { value: "Approved", labelKey: "posts.status.Approved" },
   { value: "Scheduled", labelKey: "posts.status.Scheduled" },
 ];
 
-// ── Posts data ────────────────────────────────────────────────────────────────
 const posts = ref([]);
 
 function mapPost(p) {
@@ -621,7 +617,6 @@ function normalizeStatus(s) {
   if (!s) return "Draft";
   const map = {
     draft: "Draft",
-    // pending_review: "Pending",
     approved: "Approved",
     scheduled: "Scheduled",
     published: "Published",
@@ -641,7 +636,6 @@ function toDialectKey(d) {
   );
 }
 
-// ── Load posts on mount ───────────────────────────────────────────────────────
 onMounted(async () => {
   loading.value = true;
   try {
@@ -650,13 +644,11 @@ onMounted(async () => {
     const data = await postsApi.getAllPosts(brandId);
     if (data?.length) posts.value = data.map(mapPost);
   } catch {
-    // Keep empty state
   } finally {
     loading.value = false;
   }
 });
 
-// ── Computed ──────────────────────────────────────────────────────────────────
 const filteredPosts = computed(() =>
   activeFilter.value === "All"
     ? posts.value
@@ -668,14 +660,12 @@ function statusCount(status) {
   return posts.value.filter((p) => p.status === status).length;
 }
 
-// ── Selection ─────────────────────────────────────────────────────────────────
 function toggleSelect(id) {
   const i = selected.value.indexOf(id);
   if (i === -1) selected.value.push(id);
   else selected.value.splice(i, 1);
 }
 
-// ── Approve ───────────────────────────────────────────────────────────────────
 async function approvePost(id) {
   const p = posts.value.find((x) => x.id === id);
   if (!p) return;
@@ -684,7 +674,6 @@ async function approvePost(id) {
     await postsApi.updatePost(id, { status: "approved" });
     showToast(t("posts.toastApproved"), "success");
   } catch {
-    // p.status = "Pending";
     showToast(t("posts.toastError"), "error");
   }
 }
@@ -696,7 +685,6 @@ async function approveSelected() {
   selected.value = [];
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────────
 function deletePost(id) {
   confirmDeleteId.value = id;
 }
@@ -721,8 +709,6 @@ function deleteSelected() {
   showToast(t("posts.toastDeleted"), "success");
 }
 
-// ── Edit / Save ───────────────────────────────────────────────────────────────
-// ── Apply Variant B ───────────────────────────────────────────────────────────
 async function applyVariantB(id) {
   const p = posts.value.find((x) => x.id === id);
   if (!p || !p.variantB) return;
@@ -780,13 +766,11 @@ async function savePost() {
   }
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(text, type = "success") {
   toast.value = { text, type };
   setTimeout(() => (toast.value = null), 3000);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function platformClass(p) {
   return (
     {
@@ -803,7 +787,6 @@ function statusClass(s) {
   return (
     {
       Draft: "bg-slate-500/15 text-slate-400",
-      // Pending: "bg-amber-500/15 text-amber-400",
       Approved: "bg-green-500/15 text-green-400",
       Scheduled: "bg-blue-500/15 text-blue-400",
       Published: "bg-teal-500/15 text-teal-400",

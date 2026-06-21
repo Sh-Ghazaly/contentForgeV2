@@ -29,13 +29,11 @@ async function sendVerificationEmail(email, code) {
     `,
   });
 }
-////////////////////////////////////////////////
 const emailServices = {
-  // دالة إرسال إيميل رفع الحظر
  async sendUnblockEmail(email, name) {
   try {
     await transporter.sendMail({
-      from: `"Admin Team" <${process.env.ADMIN_EMAIL}>`, // إضافة اسم مرسل واضح
+      from: `"Admin Team" <${process.env.ADMIN_EMAIL}>`, 
       to: email,
       subject: "Account Restored: You're back in!",
       html: `

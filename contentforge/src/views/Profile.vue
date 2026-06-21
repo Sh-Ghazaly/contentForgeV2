@@ -423,28 +423,23 @@ import brandApi from '../api/brandApi'
 const { t } = useI18n()
 const authStore = useAuthStore()
 
-// Password visibility toggles
 const showCurrentPass = ref(false)
 const showNewPass = ref(false)
 const showConfirmPass = ref(false)
 
-// Profile Form State
 const profileForm = ref({ name: '' })
 const profileLoading = ref(false)
 const profileMsg = ref(null)
 
-// Password Form State
 const passwordForm = ref({ current: '', new: '', confirm: '' })
 const passwordLoading = ref(false)
 const passwordMsg = ref(null)
 
-// Brands State
 const brands = ref([])
 const brandsLoading = ref(true)
 const deleteBrandTarget = ref(null)
 const brandDeleting = ref(false)
 
-// Delete Account State
 const showDeleteModal = ref(false)
 const deleteReason = ref('')
 const deleteLoading = ref(false)
@@ -468,7 +463,6 @@ onMounted(async () => {
   await fetchBrands()
 })
 
-// Fetch user's brands
 async function fetchBrands() {
   brandsLoading.value = true
   try {
@@ -482,12 +476,10 @@ async function fetchBrands() {
   }
 }
 
-// Confirm brand deletion
 function confirmDeleteBrand(brand) {
   deleteBrandTarget.value = brand
 }
 
-// Delete brand
 async function deleteBrand() {
   if (!deleteBrandTarget.value) return
   
@@ -504,7 +496,6 @@ async function deleteBrand() {
   }
 }
 
-// Update Profile Name
 async function updateProfile() {
   profileLoading.value = true
   profileMsg.value = null
@@ -522,7 +513,6 @@ async function updateProfile() {
   }
 }
 
-// Update Password
 async function updatePassword() {
   if (passwordForm.value.new !== passwordForm.value.confirm) {
     passwordMsg.value = { type: 'error', text: t('profile.passwordMismatch') }
@@ -552,7 +542,6 @@ async function updatePassword() {
   }
 }
 
-// Delete Account functions
 function closeDeleteModal() {
   showDeleteModal.value = false
   deleteReason.value = ''

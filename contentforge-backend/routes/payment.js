@@ -8,7 +8,6 @@ const { createNotification } = require("../services/notificationHelper");
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
-// ── Plan config (priceId من Stripe Dashboard) ─────────────────────────────────
 const PLANS = {
   pro_monthly: { priceId: process.env.STRIPE_Pro_MONTHLY, plan: "pro" },
   pro_annual: { priceId: process.env.STRIPE_Pro_ANNUAL, plan: "pro" },
@@ -22,9 +21,8 @@ const PLANS = {
   },
 };
 
-// ── POST /api/payment/checkout — create Stripe Checkout session ───────────────
 router.post("/checkout", protect, async (req, res) => {
-  console.log("CLIENT_URL:", process.env.CLIENT_URL); // ✅ أضف هذا السطر
+  console.log("CLIENT_URL:", process.env.CLIENT_URL); 
   console.log("API_BASE_URL:", process.env.API_BASE_URL)
   
   const { planKey } = req.body;
@@ -61,7 +59,6 @@ router.post("/checkout", protect, async (req, res) => {
   res.json({ url: session.url });
 });
 
-// ── POST /api/payment/portal ─────────────────────────────────────────────────
 router.post("/portal", protect, async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user.stripeCustomerId)
@@ -74,7 +71,6 @@ router.post("/portal", protect, async (req, res) => {
   res.json({ url: session.url });
 });
 
-// ── GET /api/payment/status — current subscription info ──────────────────────
 router.get("/status", protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -83,7 +79,6 @@ router.get("/status", protect, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // لو مفيش Stripe Customer ID، رجع free plan
     if (!user.stripeCustomerId) {
       return res.json({ 
         plan: user.plan || "free", 
@@ -92,7 +87,6 @@ router.get("/status", protect, async (req, res) => {
       });
     }
 
-    // ✅ استخدام Stripe API مع try-catch
     let subscriptions;
     try {
       subscriptions = await stripe.subscriptions.list({
@@ -103,7 +97,6 @@ router.get("/status", protect, async (req, res) => {
       });
     } catch (stripeErr) {
       console.error("[Stripe] Error fetching subscriptions:", stripeErr.message);
-      // لو الـ Customer ID مش صالح في Stripe، رجع free
       return res.json({ 
         plan: user.plan || "free", 
         status: "free", 
@@ -121,7 +114,6 @@ router.get("/status", protect, async (req, res) => {
       });
     }
 
-    // ✅ استخراج بيانات الكارت بأمان
     const pm = sub.default_payment_method;
     const cardInfo = pm?.card ? {
       brand: pm.card.brand || "unknown",
@@ -130,12 +122,10 @@ router.get("/status", protect, async (req, res) => {
       expYear: pm.card.exp_year || 0,
     } : null;
 
-    // ✅ استخراج الـ interval بأمان (متوافق مع Stripe SDK الجديد)
     const interval = sub.items?.data?.[0]?.price?.recurring?.interval 
                   || sub.items?.data?.[0]?.plan?.interval 
                   || "month";
 
-    // ✅ التحقق من current_period_end قبل إنشاء Date
     let currentPeriodEnd = null;
     if (sub.current_period_end && typeof sub.current_period_end === 'number') {
       try {
@@ -161,7 +151,6 @@ router.get("/status", protect, async (req, res) => {
     console.error("[Payment Status Error]:", err.message);
     console.error("[Stack]:", err.stack);
     
-    // ✅ إرجاع free plan بدلاً من 500 error
     res.json({ 
       plan: "free", 
       status: "free", 
@@ -171,7 +160,6 @@ router.get("/status", protect, async (req, res) => {
   }
 });
 
-// ── POST /api/payment/webhook ─────────────────────────────────────────────────
 router.post(
   "/webhook",
   express.raw({ type: "application/json" }),
@@ -203,7 +191,6 @@ router.post(
   if (!userId || !planName) break;
 
   if (data.status === "active" || data.status === "trialing") {
-    // ✅ تحديد نوع الاشتراك
     const subscriptionType = planKey.includes("annual") || planKey.includes("yearly") ? "yearly" : "monthly";
     const isYearly = subscriptionType === "yearly";
 
@@ -244,15 +231,13 @@ router.post(
 
     console.log(`✅ User ${userId} set to ${planName} (${subscriptionType})`);
   }
-        // ✅ حالة 2: الإلغاء المجدول (cancel_at_period_end = true)
-        // ⚠️ مهم: لا نحول للـ free هنا! المستخدم يبقى على الخطة حتى نهاية الفترة
+
         else if (data.status === "active" && data.cancel_at_period_end) {
           console.log(
             `⚠️ User ${userId} scheduled cancellation at period end (${new Date(data.current_period_end * 1000).toISOString()})`,
           );
-          // لا نفعل شيء - المستخدم يبقى على الخطة حتى current_period_end
         }
-        // ✅ حالة 3: انتهاء الصلاحية أو فشل الدفع
+
         else if (
           ["past_due", "unpaid", "incomplete_expired"].includes(data.status)
         ) {
@@ -279,7 +264,6 @@ router.post(
         break;
       }
 
-      // ✅ حالة 4: الحذف الفعلي للاشتراك (بعد نهاية الفترة)
       case "customer.subscription.deleted": {
         const userId = data.metadata?.userId;
         if (userId) {
@@ -306,7 +290,6 @@ router.post(
         break;
       }
 
-      // 4. حالة الحذف النهائي للاشتراك (يحدث أحياناً بدلاً من canceled)
       case "customer.subscription.deleted": {
         const userId = data.metadata?.userId;
         if (userId) {
@@ -351,7 +334,6 @@ router.post(
   },
 );
 
-// ── GET /api/payment/confirm ─────────────────────────────────────────────────
 router.get("/confirm", protect, async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -371,37 +353,34 @@ router.get("/confirm", protect, async (req, res) => {
 
     if (!planName) return res.status(400).json({ message: "Invalid plan" });
 
-    // ✅ تحديد نوع الاشتراك
     const subscriptionType = planKey.includes("annual") || planKey.includes("yearly") ? "yearly" : "monthly";
     const isYearly = subscriptionType === "yearly";
 
-    // ✅ تحديد الـ limits حسب الخطة ونوع الاشتراك
     let planLimits = {};
     
     if (planName === "pro") {
       planLimits = {
-        maxAiImagesPerMonth: isYearly ? 10 * 12 : 10, // ✅ 120 للسنوي
-        maxPostsPerCalendar: isYearly ? 20 * 12 : 20, // ❌ لا يتغير
-        maxCalendarsPerMonth: isYearly ? 5 * 12 : 5, // ✅ 60 للسنوي
-        maxBrands: 3, // ❌ لا يتغير
-        advancedAnalytics: true, // ❌ ثابت
-        multiDialectSupport: true, // ❌ ثابت
-        automatedReels: false, // ❌ ثابت
-        prioritySupport: false, // ❌ ثابت
+        maxAiImagesPerMonth: isYearly ? 10 * 12 : 10, 
+        maxPostsPerCalendar: isYearly ? 20 * 12 : 20, 
+        maxCalendarsPerMonth: isYearly ? 5 * 12 : 5, 
+        maxBrands: 3, 
+        advancedAnalytics: true, 
+        multiDialectSupport: true, 
+        automatedReels: false, 
+        prioritySupport: false, 
       };
     } else if (planName === "enterprise") {
       planLimits = {
-        maxAiImagesPerMonth: isYearly ? 20 * 12 : 20,        // ✅ 240 للسنوي
-        maxPostsPerCalendar: isYearly ? 35 * 12 : 35,                              // ❌ لا يتغير
-        maxCalendarsPerMonth: isYearly ? 15 * 12 : 15,       // ✅ 180 للسنوي
-        maxBrands: 10,                                        // ❌ لا يتغير
-        advancedAnalytics: true,                              // ❌ ثابت
-        multiDialectSupport: true,                            // ❌ ثابت
-        automatedReels: true,                                 // ❌ ثابت
-        prioritySupport: true,                                // ❌ ثابت
+        maxAiImagesPerMonth: isYearly ? 20 * 12 : 20,       
+        maxPostsPerCalendar: isYearly ? 35 * 12 : 35,                         
+        maxCalendarsPerMonth: isYearly ? 15 * 12 : 15,      
+        maxBrands: 10,                                       
+        advancedAnalytics: true,                           
+        multiDialectSupport: true,                            
+        automatedReels: true,                               
+        prioritySupport: true,                           
       };
     } else {
-      // Free plan
       planLimits = {
         maxAiImagesPerMonth: 3,
         maxPostsPerCalendar: 5,
@@ -414,7 +393,6 @@ router.get("/confirm", protect, async (req, res) => {
       };
     }
 
-    // حساب تاريخ الانتهاء
     let planEndsAt = new Date();
     if (session.subscription && session.subscription.current_period_end) {
       planEndsAt = new Date(session.subscription.current_period_end * 1000);
@@ -423,7 +401,6 @@ router.get("/confirm", protect, async (req, res) => {
       else planEndsAt.setMonth(planEndsAt.getMonth() + 1);
     }
 
-    // تحديث المستخدم
     await User.findByIdAndUpdate(userId, {
       plan: planName,
       subscriptionType: subscriptionType,

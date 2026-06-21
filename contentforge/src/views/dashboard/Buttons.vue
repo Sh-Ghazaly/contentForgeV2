@@ -1,6 +1,5 @@
 <template >
         <!-- ROW 2 (Mobile): Action Buttons -->
-        <!-- Using flex-row-reverse globally keeps the green check/actions consistently ordered relative to the language direction, while self-end / sm:justify-end handles proper container placement -->
         <div
           class="flex items-center gap-1.5 sm:gap-2 shrink-0 flex-wrap self-end sm:self-auto justify-end flex-row"
         >
@@ -160,7 +159,7 @@
             </span>
           </button>
 
-          <!-- Add Post button — يظهر بس لو في calendar ومتناسق مع باقي الزراير في الهوفر -->
+          <!-- Add Post button-->
           <button
             v-if="currentCalendar"
             @click="showAddPostModal = true"

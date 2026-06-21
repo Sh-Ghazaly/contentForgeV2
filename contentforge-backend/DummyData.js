@@ -1,9 +1,7 @@
-// seed.js
 const mongoose = require('mongoose');
 const { faker } = require('@faker-js/faker');
-const { User, Brand, Post, Calendar, Trend, ChatMessage } = require('./models/index'); // اتأكدي من المسار الصح للموديلز في مشروعك
+const { User, Brand, Post, Calendar, Trend, ChatMessage } = require('./models/index'); 
 
-// مصطلحات مناسبة للبزنس والسوشيال ميديا في مصر والوطن العربي
 const dialects = ['Egyptian Arabic', 'Gulf Arabic', 'Levantine Arabic', 'Modern Standard Arabic', 'Bilingual AR+EN'];
 const platforms = ['Instagram', 'Facebook', 'LinkedIn', 'Twitter/X', 'TikTok'];
 const plans = ['free', 'pro', 'enterprise'];
@@ -11,13 +9,11 @@ const postStatuses = ['draft', 'approved', 'scheduled', 'published'];
 
 async function seedDB() {
   try {
-    // 1. الاتصال بقاعدة البيانات (تم الحفاظ على الـ URI الخاص بكِ)
     await mongoose.connect(
       "mongodb://Noura:jnkZSqcX2bJ3LLitit2026@ac-vmdhgeq-shard-00-00.diacuvs.mongodb.net:27017,ac-vmdhgeq-shard-00-01.diacuvs.mongodb.net:27017,ac-vmdhgeq-shard-00-02.diacuvs.mongodb.net:27017/?ssl=true&replicaSet=atlas-usupgm-shard-0&authSource=admin&appName=Cluster0",
     );
     console.log('🔌 Connected to MongoDB successfully...');
 
-    // 2. تنظيف الداتا القديمة بالكامل
     await Promise.all([
       User.deleteMany({}),
       Brand.deleteMany({}),
@@ -28,7 +24,6 @@ async function seedDB() {
     ]);
     console.log('🧹 Cleaned up existing data completely.');
 
-    // 3. توليد Trends فريش متناسقة مع الـ trendService الجديد
     console.log('📈 Generating Trends...');
     const trends = [];
     const now = new Date();
@@ -42,47 +37,41 @@ async function seedDB() {
         velocity: faker.number.int({ min: 50, max: 400 }),
         region: 'EG',
         source: faker.helpers.arrayElement(['google', 'manual']),
-        lastUpdated: now, // الحقل ده مهم جداً للـ Scheduler الجديد
+        lastUpdated: now, 
       });
     }
     const createdTrends = await Trend.insertMany(trends);
     console.log(`📈 Inserted ${createdTrends.length} Dummy Trends.`);
 
-    // 4. توليد مستخدمين (Users) متوافقين مع سكيما الـ 14 يوم تجربة والـ OTP
     console.log('👥 Generating Users...');
     const usersData = [];
     
-    // إضافة الـ Admin أولاً
     usersData.push({
       name: 'Super Admin',
       email: 'admin@app.com',
-      password: 'password123', // الـ pre-save hook هيعملها hash تلقائي
+      password: 'password123', 
       plan: 'enterprise',
       subscriptionType: 'yearly',
       isVerified: true,
       phone: '+201000000000',
       isTrial: false,
-      planEndsAt: null, // الأدمن مش بيحتاج تاريخ انتهاء
+      planEndsAt: null, 
       hasUsedTrial: true,
       isAdmin: true,
     });
 
-    // توليد 10 مستخدمين عاديين للتجربة والاختبار
     for (let i = 1; i <= 10; i++) {
-      // نحدد الـ plan الأول، وبعدين نبني باقي الحقول عليه بمنطق صح
       const plan = faker.helpers.arrayElement(plans);
 
       let subscriptionType, planEndsAt, isTrial;
 
       if (plan === 'free') {
-        // الـ free دايماً trial، مفيش اشتراك مدفوع
         subscriptionType = 'none';
         isTrial = true;
         planEndsAt = faker.datatype.boolean(0.7)
-          ? new Date(Date.now() + faker.number.int({ min: 1, max: 14 }) * 24 * 60 * 60 * 1000)  // active trial
-          : new Date(Date.now() - faker.number.int({ min: 1, max: 7 })  * 24 * 60 * 60 * 1000); // expired trial
+          ? new Date(Date.now() + faker.number.int({ min: 1, max: 14 }) * 24 * 60 * 60 * 1000)
+          : new Date(Date.now() - faker.number.int({ min: 1, max: 7 })  * 24 * 60 * 60 * 1000);
       } else {
-        // pro أو enterprise = اشتراك مدفوع، مش trial
         subscriptionType = faker.helpers.arrayElement(['monthly', 'yearly']);
         isTrial = false;
         const months = subscriptionType === 'yearly' ? 12 : 1;
@@ -105,7 +94,6 @@ async function seedDB() {
       });
     }
 
-    // حفظ المستخدمين فرداً فرداً لتفعيل الـ pre-save hook الخاص بـ Bcrypt لباسورد نظيف
     const createdUsers = [];
     for (const u of usersData) {
       const user = new User(u);
@@ -114,13 +102,11 @@ async function seedDB() {
     }
     console.log(`👥 Successfully created ${createdUsers.length} Users.`);
 
-    // 5. توليد البراندات (Brands) مرتبطة بالـ Users
     console.log('🏢 Generating Brands...');
     const createdBrands = [];
     for (const user of createdUsers) {
-      if (user.isAdmin) continue; // تخطي حساب الأدمن
+      if (user.isAdmin) continue; 
 
-      // كل يوزر يكريت براند أو اتنين
       const numBrands = faker.number.int({ min: 1, max: 2 });
       for (let b = 0; b < numBrands; b++) {
         const brand = await Brand.create({
@@ -145,11 +131,9 @@ async function seedDB() {
     }
     console.log(`🏢 Successfully created ${createdBrands.length} Brands.`);
 
-    // 6. توليد الكالندر، البوستات، والمحادثات
     console.log('📅 Generating Calendars, Posts, and Chat Messages...');
     
     for (const brand of createdBrands) {
-      // أ) محادثات ذكاء اصطناعي تجريبية لكل براند لملء الـ Dashboard Analytics
       for (let c = 0; c < 3; c++) {
         const convId = faker.string.uuid();
         await ChatMessage.create({
@@ -166,7 +150,6 @@ async function seedDB() {
         });
       }
 
-      // ب) إنشاء تقويم محتوى (Calendar) للبراند
       const calendar = await Calendar.create({
         brand: brand._id,
         user: brand.user,
@@ -175,12 +158,11 @@ async function seedDB() {
         dialect: faker.helpers.arrayElement(brand.dialects),
         platforms: brand.platforms,
         startDate: new Date(),
-        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // خطة لمدة 14 يوم
+        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), 
         status: faker.helpers.arrayElement(['generating', 'ready', 'approved']),
-        posts: [] // سيتم ربطها بالـ Object IDs تالياً
+        posts: [] 
       });
 
-      // جـ) توليد منشورات (Posts) عشوائية وتوزيعها داخل الكالندر
       const postIds = [];
       const numPosts = faker.number.int({ min: 3, max: 6 });
 
@@ -209,7 +191,6 @@ async function seedDB() {
         postIds.push(post._id);
       }
 
-      // ربط المصفوفة بالكالندر وحفظ التحديثات
       calendar.posts = postIds;
       await calendar.save();
     }

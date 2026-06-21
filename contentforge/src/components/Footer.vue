@@ -43,7 +43,7 @@ import { useTheme } from '../composables/useTheme.js'
 const { t } = useI18n()
 const { isDark } = useTheme()
 
-// Simple function to scroll to the top of the current page
+
 const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }

@@ -3,7 +3,6 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ── Build top posts context block (only if posts exist) ───────────────────────
 function buildTopPostsContext(topPosts) {
   if (!topPosts?.length) return "";
 
@@ -37,7 +36,6 @@ Key takeaways to apply:
 `.trim();
 }
 
-// ── Generate calendar ─────────────────────────────────────────────────────────
 async function generateCalendar({
   brief,
   brand,
@@ -104,7 +102,6 @@ RESPOND ONLY with a JSON array, no extra text, no markdown fences. Example forma
   return JSON.parse(text);
 }
 
-// ── Generate A/B variant ──────────────────────────────────────────────────────
 async function generateVariantB({ post, brand, topPosts }) {
   const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 

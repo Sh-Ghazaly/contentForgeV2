@@ -318,7 +318,6 @@ import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
 import api from "../../api/client";
 
-// Theme & Language
 import { useTheme } from "../../composables/useTheme.js";
 import { useLang } from "../../composables/useLang.js";
 import { useI18n } from "vue-i18n";
@@ -334,7 +333,6 @@ const currentTime = ref("");
 const route = useRoute();
 const router = useRouter();
 
-// Close mobile sidebar on route change
 watch(
   () => route.path,
   () => {
@@ -348,16 +346,15 @@ const unreadCount = ref(0);
 const notifLoading = ref(false);
 const expandedNotifId = ref(null);
 
-// Handle notification click: expand on first click, mark read on second
 function handleNotifClick(notifId) {
   if (expandedNotifId.value === notifId) {
-    // Already expanded → mark as read
+  
     if (!notifications.value.find((x) => (x._id || x.id) === notifId)?.read) {
       markRead(notifId);
     }
     expandedNotifId.value = null;
   } else {
-    // Expand it
+    
     expandedNotifId.value = notifId;
   }
 }
@@ -412,7 +409,7 @@ async function deleteNotif(notifId) {
   }
 }
 
-// Poll every 30 seconds
+
 let notifInterval;
 onMounted(() => {
   fetchNotifications();
@@ -504,7 +501,6 @@ function handleCollapseClick() {
   background: #0d0f14;
 }
 
-/* ── Sidebar ── */
 .admin-sidebar {
   width: 240px;
   min-height: 100vh;
@@ -731,7 +727,6 @@ function handleCollapseClick() {
   color: #6b7280;
 }
 
-/* ── Main ── */
 .admin-main {
   flex: 1;
   display: flex;
@@ -789,7 +784,6 @@ function handleCollapseClick() {
   gap: 0.75rem;
 }
 
-/* ── Mobile Menu Button ── */
 .mobile-menu-btn {
   display: none;
   background: none;
@@ -815,7 +809,6 @@ function handleCollapseClick() {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* ── Mobile Backdrop ── */
 .mobile-backdrop {
   display: none;
   position: fixed;
@@ -825,7 +818,6 @@ function handleCollapseClick() {
   backdrop-filter: blur(2px);
 }
 
-/* ── Admin Topbar Buttons ── */
 .admin-topbar-btn {
   display: flex;
   align-items: center;
@@ -867,7 +859,6 @@ function handleCollapseClick() {
   padding: 6px 8px;
 }
 
-/* Dropdown transition */
 .dropdown-fade-enter-active,
 .dropdown-fade-leave-active {
   transition:
@@ -892,7 +883,6 @@ function handleCollapseClick() {
   flex-direction: column;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed;

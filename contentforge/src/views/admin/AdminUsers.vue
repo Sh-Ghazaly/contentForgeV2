@@ -294,7 +294,6 @@
                   <option value="enterprise">{{ t('admin.usersPage.enterprise') }}</option>
                 </select>
               </div>
-               <!-- /////اضافة تاريخ الانضمام نوران -->
             <div v-if="!editForm.isAdmin">
               <label class="text-xs font-medium mb-1.5 block" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
     {{ t('admin.usersPage.startDate') }}
@@ -492,7 +491,6 @@ function removeToast(id) {
 }
 
 let searchTimer
-// ضيفي المتغير ده في الـ Data أو الـ Setup
 const today = new Date().toISOString().split('T')[0];
 
 function onSearch() {
@@ -536,57 +534,21 @@ async function submitBlockWarning() {
 }
 const componentKey = ref(0);
 async function executeToggleBlock(u) {
-  // try {
-  //   const res = await adminApi.blockUser(u._id)
-  //   u.isBlocked = res.isBlocked
-  //   if (!u.moderation) u.moderation = {}
-  //   Object.assign(u.moderation, res.moderation)
-  // } catch (error) {
-  //   console.error("Error toggling block:", error)
-  // }
-//   try {
-//     const res = await adminApi.blockUser(u._id);  // ← واحدة بس
-//     console.log('res:', res);
-//     u.isBlocked = res.isBlocked;
-//     u.moderation = res.moderation;
-//     const index = users.value.findIndex(user => user._id === u._id);
-//     if (index !== -1) {
-//   users.value[index].isBlocked = res.isBlocked;
-//   users.value[index].moderation = res.moderation;
-// }
-//     componentKey.value += 1; 
-//     if (!res.isBlocked) { // إذا أصبح المستخدم غير محظور
-//       try {
-//         await emailServices.sendUnblockEmail(u);
-//         console.log("تم إرسال إيميل التفعيل للمستخدم");
-//       } catch (emailError) {
-//         console.error("فشل إرسال الإيميل:", emailError);
-//       }
-//     }
-    
-//   } catch (error) {
-//     console.error(error);
-//   }
 
   try {
-    // نطلب من السيرفر فك الحظر
     const res = await adminApi.blockUser(u._id); 
     
-    // تحديث الحالة في الواجهة
     u.isBlocked = res.isBlocked;
     u.moderation = res.moderation;
     
-    // تحديث الـ Array
     const index = users.value.findIndex(user => user._id === u._id);
     if (index !== -1) {
       users.value[index].isBlocked = res.isBlocked;
       users.value[index].moderation = res.moderation;
     }
     
-    // التحديث التلقائي للجدول
     componentKey.value += 1; 
 
-    // إشعار بسيط للمدير (بما أن السيرفر تكفل بإرسال الإيميل)
     if (!res.isBlocked) {
       showToast(t('admin.usersPage.unblockSuccess'), 'success')
     } else {
@@ -616,7 +578,6 @@ function handleBlockAction(u) {
   }
 }
 
-// في الـ Script الخاص بالـ Vue
 const getRemainingTime = (date) => {
   if (!date) return "—";
   
@@ -649,7 +610,6 @@ async function saveEdit() {
   const todayDate = new Date();
   todayDate.setHours(0, 0, 0, 0);
 
-  // التحقق من startDate
   if (editForm.value.startDate && new Date(editForm.value.startDate) < todayDate) {
     showToast(t('admin.usersPage.startDatePastError'), 'warning')
     return;
@@ -673,7 +633,6 @@ async function saveEdit() {
       }
       payload.startDate = editForm.value.startDate ? new Date(editForm.value.startDate) : null;
       payload.subscriptionType = editForm.value.subscriptionType || 'monthly';
-      // لا ترسل planEndsAt هنا!
     }
 
     const updated = await adminApi.updateUser(editUser.value._id, payload);
@@ -707,7 +666,7 @@ async function doDelete() {
 }
 
 function planLabel(u) {
-    if (u.isAdmin) return '—'  // ← ضيفي السطر ده
+    if (u.isAdmin) return '—'  
 
   if (u.isTrial) {
     const days = Math.ceil((new Date(u.planEndsAt) - Date.now()) / 86400000)
@@ -717,7 +676,7 @@ function planLabel(u) {
 }
 
 function planClass(u) {
-    if (u.isAdmin) return isDark.value ? 'text-slate-500' : 'text-slate-400'  // ← ده كمان
+    if (u.isAdmin) return isDark.value ? 'text-slate-500' : 'text-slate-400'  
 
   if (u.isTrial) {
     const isExpired = new Date(u.planEndsAt) <= Date.now()
