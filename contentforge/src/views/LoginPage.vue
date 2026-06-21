@@ -940,12 +940,7 @@ async function submit() {
       }
     }
   } catch (err) {
-    // ✅ trial_expired no longer reaches here: the backend now always
-    // issues a token for expired-trial/subscription users too, so that
-    // case goes through the success path above and is handled by
-    // handlePostLoginRedirect's `user?.trialExpired` check (which saves
-    // the token first, then redirects) instead of landing here with no
-    // session at all.
+
     if (err.reason === 'blocked') {
       router.push('/account-suspended?reason=blocked');
       return;

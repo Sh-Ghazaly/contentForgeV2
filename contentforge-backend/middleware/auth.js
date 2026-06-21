@@ -26,20 +26,8 @@ const protect = async (req, res, next) => {
         success: false, 
       });
     }
-
-    // ✅ FIX: req.path is relative to wherever this middleware is mounted/used
-    // (e.g. inside routes/payment.js it's just "/checkout", not "/payment/checkout"),
-    // so `req.path.startsWith('/payment')` was always false in practice and never
-    // exempted payment routes from the trial/subscription-expired block below.
-    // req.originalUrl always has the FULL path as the client requested it
-    // (e.g. "/api/payment/checkout"), which is what we actually need to check.
     const isPaymentRoute = req.originalUrl.includes('/payment');
 
-    // ✅ FIX: /auth/me also needs to be exempt. Trial-expired users still need
-    // to be able to fetch their own profile (e.g. right after login, or on the
-    // /trial-expired page itself) — otherwise no page can ever find out who
-    // they are or why they're blocked, and login flows that redirect through
-    // a "fetch /me to confirm token" step (like Google login) break entirely.
     const isExemptRoute = isPaymentRoute || req.originalUrl.includes('/auth/me');
 
     if (

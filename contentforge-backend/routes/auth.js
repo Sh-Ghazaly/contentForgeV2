@@ -39,17 +39,6 @@ router.get('/google/callback',
       return res.redirect(`${frontendUrl}/account-suspended?reason=blocked`)
     }
 
-    // ✅ Always sign the token before redirecting, regardless of trial/
-    // subscription status. Previously the trial-expired and subscription-
-    // expired branches below redirected straight to /trial-expired WITHOUT
-    // a token, so the frontend never had a session — that's why "Try Now"
-    // on the trial-expired page saw no cf_token and bounced to /login.
-    //
-    // /login-success (SocialAuthSuccess.vue) already fetches the user
-    // profile after saving the token, and redirects to /trial-expired
-    // itself when the profile shows an expired trial — so routing every
-    // outcome through /login-success here is enough; no separate
-    // trial/subscription branches are needed in this callback anymore.
     const token = signToken(req.user._id)
     res.redirect(`${frontendUrl}/login-success?token=${token}&provider=google`)
   }
@@ -184,12 +173,6 @@ router.post("/login", async (req, res) => {
 
   const token = signToken(user._id);
 
-  // ✅ Trial/subscription expired users still get a valid token and full
-  // login response — just with trialExpired/subscriptionExpired flags set.
-  // Previously this branch returned a 403 with NO token at all, so the
-  // frontend had nothing to save to localStorage and any page relying on
-  // cf_token (like "Try Now" on /trial-expired) treated the user as
-  // logged out.
   res.json({
     token,
     user: {
