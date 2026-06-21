@@ -32,7 +32,6 @@ router.patch('/:id/read', auth, async (req, res) => {
   }
 })
 
-r
 router.patch('/read-all', auth, async (req, res) => {
   try {
     await Notification.updateMany(
