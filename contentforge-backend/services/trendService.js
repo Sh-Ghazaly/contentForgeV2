@@ -82,7 +82,7 @@ async function fetchAndSaveTrends() {
       lastUpdated: new Date(),
     }));
 
-    await Trend.deleteMany({ source: "google", region: "EG" });
+    await Trend.deleteMany({ region: "EG" });
     await Trend.insertMany(trendDocs);
     console.log(
       `[TrendService] Saved ${trendDocs.length} trends at ${new Date().toLocaleTimeString()}`,
