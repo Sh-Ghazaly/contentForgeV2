@@ -940,7 +940,16 @@ async function submit() {
       }
     }
   } catch (err) {
-    error.value = err.message || t("auth.errorGeneric");
+    // error.value = err.message || t("auth.errorGeneric");
+    if (err.reason === 'trial_expired') {
+    router.push('/trial-expired');
+    return;
+  }
+  if (err.reason === 'blocked') {
+    router.push('/account-suspended?reason=blocked');
+    return;
+  }
+  error.value = err.message || t("auth.errorGeneric");
   } finally {
     loading.value = false;
   }
