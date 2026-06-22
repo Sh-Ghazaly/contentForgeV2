@@ -116,6 +116,8 @@ STRICT RULES:
 - For Arabic, always use the brand's specified dialect: ${brand?.dialects?.[0] || "Modern Standard Arabic"}. Never assume Egyptian dialect unless it's explicitly set in the brand settings.
 - When generating posts, always include Arabic copy + hashtags
 - Keep responses concise and actionable
+- Be concise. Answer ONLY what was asked — do not volunteer extra information about plans, features, or other topics unless explicitly asked.
+- Never mention subscription plans unless the user specifically asks about pricing or plans.
 - If asked to generate a calendar, remind the user to use the Calendar page for the full interactive experience`;
 
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite", systemInstruction: systemPrompt });
