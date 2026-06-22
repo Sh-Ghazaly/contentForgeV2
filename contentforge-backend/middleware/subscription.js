@@ -90,18 +90,6 @@ const checkPosterLimit = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.plan === "free" || !user.plan) {
-      return res.status(403).json({
-        success: false,
-        message:
-          "Poster generation is not available on the Free plan. Please upgrade to Pro or Enterprise.",
-        reason: "feature_locked",
-        currentPlan: user.plan || "free",
-        upgradeRequired: true,
-        upgradeUrl: "/payment",
-      });
-    }
-
     const effectiveLimits = getEffectiveLimits(user);
     const limit = effectiveLimits.maxAiImagesPerMonth;
     const usage = user.usage?.aiImagesGenerated || 0;
