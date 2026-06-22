@@ -1897,15 +1897,26 @@ function validateDates() {
   }
 }
 
+function extractPercentage(change) {
+  if (!change) return 0;
+  return parseInt(change.replace(/[^0-9]/g, '')) || 0;
+}
+
 async function fetchTrends(dialect = "Egyptian Arabic") {
   try {
     const region = DIALECT_REGION_MAP[dialect] || "EG";
     const data = await api.get(`/trends?region=${region}`);
     
-    trends.value = data.trends.map((t) => ({
-      ...t,
-      color: t.velocity > 200 ? "text-green-400" : "text-teal-400",
-    }));
+    trends.value = data.trends
+      .map((t) => ({
+        ...t,
+        color: t.velocity > 200 ? "text-green-400" : "text-teal-400",
+      }))
+      .sort((a, b) => {
+        const percentA = extractPercentage(a.change);
+        const percentB = extractPercentage(b.change);
+        return percentB - percentA;
+      });
     
     trendsLastUpdated.value = new Date(data.lastUpdated).toLocaleTimeString(
       "ar-EG",
