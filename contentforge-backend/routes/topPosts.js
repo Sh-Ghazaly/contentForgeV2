@@ -3,18 +3,13 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 const axios = require("axios");
 const protect = require("../middleware/auth");
 const { TopPost, Brand } = require("../models");
 const { embedBrandVault } = require("../services/embeddingService");
 const he = require("he");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
-});
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 
 router.get("/:brandId", protect, async (req, res) => {
   const posts = await TopPost.find({ brand: req.params.brandId }).sort(
@@ -37,7 +32,6 @@ router.post("/:brandId/manual", protect, async (req, res) => {
   res.json(post);
 });
 
-
 router.post("/:brandId/from-link", protect, async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ message: "URL required" });
@@ -53,7 +47,7 @@ router.post("/:brandId/from-link", protect, async (req, res) => {
 
     res.json({
       platform,
-      content: cleanContent, 
+      content: cleanContent,
       imageUrl: meta.image || "",
       postUrl: url,
       stats: {
@@ -74,7 +68,6 @@ router.post("/:brandId/from-link", protect, async (req, res) => {
   }
 });
 
-
 router.post(
   "/:brandId/from-doc",
   protect,
@@ -90,7 +83,7 @@ router.post(
       const ext = path.extname(req.file.originalname).toLowerCase();
 
       if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-        const imageData = fs.readFileSync(req.file.path).toString("base64");
+        const imageData = req.file.buffer.toString("base64");
 
         console.log(
           "[AI] Analyzing screenshot with Gemini 2.5 Flash Vision...",
@@ -107,12 +100,11 @@ router.post(
 
       if (ext === ".pdf") {
         const pdfParse = require("pdf-parse");
-        const buffer = fs.readFileSync(req.file.path);
-        const parsed = await pdfParse(buffer);
+        const parsed = await pdfParse(req.file.buffer);
         text = parsed.text;
       } else if (ext === ".docx") {
         const mammoth = require("mammoth");
-        const result = await mammoth.extractRawText({ path: req.file.path });
+        const result = await mammoth.extractRawText({ buffer: req.file.buffer });
         text = result.value;
       }
 
@@ -129,14 +121,9 @@ router.post(
       res
         .status(500)
         .json({ message: "AI Extraction failed", error: err.message });
-    } finally {
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlink(req.file.path, () => {});
-      }
     }
   },
 );
-
 
 router.post("/:brandId/save-extracted", protect, async (req, res) => {
   const post = await TopPost.create({
@@ -151,7 +138,6 @@ router.post("/:brandId/save-extracted", protect, async (req, res) => {
   });
   res.json(post);
 });
-
 
 router.post("/:brandId/embed", protect, async (req, res) => {
   const [brand, posts] = await Promise.all([
