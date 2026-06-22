@@ -1889,6 +1889,31 @@ function validateDates() {
   }
 }
 
+async function fetchTrends(dialect = "Egyptian Arabic") {
+  try {
+    const region = DIALECT_REGION_MAP[dialect] || "EG";
+    const data = await api.get(`/trends?region=${region}`);
+    
+    trends.value = data.trends.map((t) => ({
+      ...t,
+      color: t.velocity > 200 ? "text-green-400" : "text-teal-400",
+    }));
+    
+    trendsLastUpdated.value = new Date(data.lastUpdated).toLocaleTimeString(
+      "ar-EG",
+    );
+    
+    console.log(`[Dashboard] Fetched trends for region: ${region}`);
+  } catch (err) {
+    console.error("Trends Fetch Error:", err);
+  }
+}
+
+watch(selectedDialect, async (newDialect) => {
+  console.log(`[Dashboard] Dialect changed to: ${newDialect}`);
+  await fetchTrends(newDialect);
+});
+
 watch(
   todayDate,
   (newDate) => {
@@ -1902,18 +1927,7 @@ onMounted(async () => {
     isTrendsAlwaysVisible.value = window.innerWidth >= 1024;
   });
 
-  try {
-    const data = await api.get("/trends");
-    trends.value = data.trends.map((t) => ({
-      ...t,
-      color: t.velocity > 200 ? "text-green-400" : "text-teal-400",
-    }));
-    trendsLastUpdated.value = new Date(data.lastUpdated).toLocaleTimeString(
-      "ar-EG",
-    );
-  } catch (err) {
-    console.error("Trends Fetch Error:", err);
-  }
+  await fetchTrends(selectedDialect.value);
 
   try {
     console.log("[Dashboard] Fetching user brands...");
