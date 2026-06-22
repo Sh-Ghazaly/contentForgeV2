@@ -1524,5 +1524,10 @@
     "cta": "Renew Subscription"
   },
   "logout": "Log out"
-}
+},
+   "notFound": {
+    "title": "Oops! Page not found",
+    "message": "The page you are looking for doesn't exist or has been moved.",
+    "backHome": "Back to Home"
+  }
 }
