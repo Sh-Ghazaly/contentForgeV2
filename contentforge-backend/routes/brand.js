@@ -86,7 +86,7 @@ router.post(
           {
             resource_type: "raw",
             folder: "brand-guidelines",
-            public_id: `${Date.now()}-${req.file.originalname}`,
+            public_id: `brand-guidelines/${Date.now()}`,
           },
           (error, result) => {
             if (error) reject(error);
