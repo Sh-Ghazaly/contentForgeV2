@@ -1752,6 +1752,14 @@ const dialectOptions = [
   { value: "Bilingual AR+EN", labelKey: "dashboard.dialect.bilingual" },
 ];
 
+const DIALECT_REGION_MAP = {
+  "Egyptian Arabic": "EG",
+  "Gulf Arabic": "SA",
+  "Levantine Arabic": "LB",
+  "Modern Standard Arabic": "EG",
+  "Bilingual AR+EN": "EG",
+};
+
 const topTrend = computed(() => trends.value[0] || null);
 
 const duration = computed(() => {
