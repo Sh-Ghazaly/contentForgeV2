@@ -28,7 +28,7 @@ import AdminPlans from "./views/admin/AdminPlans.vue";
 import AdminSettings from "./views/admin/AdminSettings.vue";
 import LoginSuccessPage from "./views/LoginSuccess.vue";
 import AiReelsPage from "./views/AiReelPage.vue";
-
+import NotFound from './views/PageNotFound.vue'
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -91,6 +91,10 @@ const router = createRouter({
       component: Profile,
       meta: { requiresAuth: true },
     },
+{path: '/:pathMatch(.*)*',
+  name: 'NotFound',
+  component: NotFound
+}
   ],
   scrollBehavior(to) {
     if (to.hash) return { el: to.hash, behavior: "smooth" };
