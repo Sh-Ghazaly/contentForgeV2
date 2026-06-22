@@ -2,19 +2,22 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const path = require("path");
+// const path = require("path");
 const protect = require("../middleware/auth");
 const { Brand, User } = require("../models");
 const { embedBrandVault } = require("../services/embeddingService");
 const { createNotification } = require("../services/notificationHelper");
 
 // Multer config — save uploads to /uploads folder
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+// NEW
+const cloudinary = require("cloudinary").v2;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB max
-
+// const cloudinary = require("../config/cloudinary"); // adjust path if needed
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
 // POST /api/brand — create or update brand profile
 router.post("/", protect, async (req, res) => {
   try {
@@ -79,20 +82,44 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // POST /api/brand/:id/upload-guidelines — upload PDF
+// NEW
 router.post(
   "/:id/upload-guidelines",
   protect,
   upload.single("guidelines"),
   async (req, res) => {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    await Brand.findByIdAndUpdate(req.params.id, {
-      guidelinesFile: req.file.path,
-    });
-    res.json({ message: "Guidelines uploaded", file: req.file.path });
+
+    try {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: "raw", // required for PDFs
+            folder: "brand-guidelines",
+            public_id: `${Date.now()}-${req.file.originalname}`,
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      await Brand.findByIdAndUpdate(req.params.id, {
+        guidelinesFile: uploadResult.secure_url,
+      });
+
+      res.json({ message: "Guidelines uploaded", file: uploadResult.secure_url });
+    } catch (err) {
+      console.error("[Brand] Cloudinary upload error:", err);
+      res.status(500).json({ message: "Failed to upload file" });
+    }
   },
 );
 
 // POST /api/brand/:id/upload-posts — upload past post images
+// NEW
 router.post(
   "/:id/upload-posts",
   protect,
@@ -100,11 +127,32 @@ router.post(
   async (req, res) => {
     if (!req.files?.length)
       return res.status(400).json({ message: "No files uploaded" });
-    const paths = req.files.map((f) => f.path);
-    await Brand.findByIdAndUpdate(req.params.id, {
-      $push: { pastPostsFiles: { $each: paths } },
-    });
-    res.json({ message: `${paths.length} files uploaded`, files: paths });
+
+    try {
+      const urls = await Promise.all(
+        req.files.map((file) =>
+          new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+              { folder: "brand-posts" },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+              }
+            );
+            stream.end(file.buffer);
+          })
+        )
+      );
+
+      await Brand.findByIdAndUpdate(req.params.id, {
+        $push: { pastPostsFiles: { $each: urls } },
+      });
+
+      res.json({ message: `${urls.length} files uploaded`, files: urls });
+    } catch (err) {
+      console.error("[Brand] Cloudinary upload error:", err);
+      res.status(500).json({ message: "Failed to upload files" });
+    }
   },
 );
 
