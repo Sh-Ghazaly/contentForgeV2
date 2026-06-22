@@ -49,39 +49,6 @@
             </span>
           </div>
         </div>
-
-        <!-- Block by Phone -->
-      <!--<div 
-          class="flex items-center justify-between gap-4 py-4 border-b"
-          :class="isDark ? 'border-white/5' : 'border-slate-100'"
-        >
-          <div class="flex-1">
-            <p class="text-[13px] font-medium mb-0.5" :class="isDark ? 'text-white' : 'text-slate-900'">
-              {{ t('admin.settingsPage.blockByPhone') }}
-            </p>
-            <p class="text-[12px]" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
-              {{ t('admin.settingsPage.blockByPhoneDesc') }}
-            </p>
-          </div>
-          <label class="relative inline-block w-10 h-[22px] shrink-0 cursor-pointer">
-            <input type="checkbox" v-model="settings.blockByPhone" class="opacity-0 w-0 h-0"/>
-            <span 
-              class="absolute inset-0 rounded-full transition-colors"
-              :class="isDark ? 'bg-white/10' : 'bg-slate-200'"
-              style="transition: background 0.2s;"
-            ></span>
-            <span 
-              class="absolute top-[3px] left-[3px] w-4 h-4 rounded-full transition-all"
-              :class="[
-                settings.blockByPhone 
-                  ? 'bg-blue-500 translate-x-[18px]' 
-                  : (isDark ? 'bg-slate-500' : 'bg-slate-400')
-              ]"
-              style="transition: all 0.2s;"
-            ></span>
-          </label>
-        </div>
- -->
       </div>
 
       <!-- Email Settings -->
@@ -244,38 +211,6 @@ async function save() {
     saving.value = false
   }
 }
-// const settingsSaved = ref(false)
-// const triggering = ref(false)
-// const triggerMsg = ref('')
-
-// async function triggerWarnings() {
-//   triggering.value = true
-//   triggerMsg.value = ''
-//   try {
-//     const res = await adminApi.triggerExpiryWarnings()
-//     triggerMsg.value = '✓ ' + res.message
-//   } catch (err) {
-//     triggerMsg.value = '✗ ' + (err.message || 'حدث خطأ')
-//   } finally {
-//     triggering.value = false
-//     setTimeout(() => { triggerMsg.value = '' }, 4000)
-//   }
-// }
-// async function save() {
-//   saving.value = true
-//   saveMsg.value = ''
-//   try {
-//     const res = await adminApi.saveSettings(settings.value)
-//     saveMsg.value = `✓ ${t('admin.settingsPage.saved')} — ${res.updatedUsers} ${t('admin.settingsPage.trialUsersUpdated')}`
-//     saved.value = true
-//     settingsSaved.value = true  // ✅ أضيفي السطر ده بس
-//     setTimeout(() => { saved.value = false; saveMsg.value = '' }, 3000)
-//   } catch (err) {
-//     saveMsg.value = err.message || t('admin.settingsPage.saveFailed')
-//   } finally {
-//     saving.value = false
-//   }
-// }
 </script>
  
 <style scoped>

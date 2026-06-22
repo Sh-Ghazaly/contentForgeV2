@@ -22,21 +22,17 @@ router.post(
     const { name, email, company, subject, message } = req.body
 
     try {
-      // 1. Save to database
       await ContactMessage.create({ name, email, company, subject, message })
       console.log('[Contact] Message saved to DB')
 
-      // 2. Send email to admin (fire-and-forget, don't block response)
       sendContactNotificationEmail(name, email, company, subject, message)
         .then(() => console.log('[Contact] Admin email sent'))
         .catch(err => console.error('[Contact] Admin email failed:', err.message))
 
-      // 3. Send auto-reply to user (fire-and-forget)
       sendContactAutoReply(email, name)
         .then(() => console.log('[Contact] Auto-reply sent'))
         .catch(err => console.error('[Contact] Auto-reply failed:', err.message))
 
-      // 4. Notify admins in-app (fire-and-forget, completely non-blocking)
       ;(async () => {
         try {
           const admins = await User.find({ isAdmin: true })
@@ -68,7 +64,6 @@ router.post(
         }
       })()
 
-      // Return success immediately, don't wait for emails/notifications
       res.status(200).json({ message: 'Message sent successfully' })
     } catch (err) {
       console.error('[Contact] CRITICAL ERROR:', err)

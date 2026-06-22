@@ -3,8 +3,8 @@ import en from './en.json'
 import ar from './ar.json'
 
 const i18n = createI18n({
-  legacy: false,        // ← required for Composition API
-  locale: 'en',        // default locale
+  legacy: false,      
+  locale: 'en',       
   fallbackLocale: 'en',
   messages: { en, ar }
 })

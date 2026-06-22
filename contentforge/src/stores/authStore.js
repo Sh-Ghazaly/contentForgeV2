@@ -6,12 +6,10 @@ import i18n from '../locales/i18n.js'
 
 export const useAuthStore = defineStore('auth', () => {
 
-  // ── State ─────────────────────────────────────────────────────────────────
-  const user = ref(authApi.getUser())   // Load from localStorage on start
+  const user = ref(authApi.getUser())  
   const loading = ref(false)
   const error = ref(null)
 
-  // ── Getters ───────────────────────────────────────────────────────────────
   const isLoggedIn = computed(() => !!user.value)
   const userName = computed(() => {
     void i18n.global.locale.value
@@ -25,20 +23,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   const userInitial = computed(() => user.value?.name?.[0]?.toUpperCase() || '?')
 
-  // ── Actions ───────────────────────────────────────────────────────────────
   async function login(credentials) {
     loading.value = true
     error.value = null
     try {
       const data = await authApi.login(credentials)
       user.value = data.user
-
-      // ← الإضافة هنا
-      // if (data.user?.isAdmin) {
-      //   window.location.href = '/admin'
-      // } else {
-      //   window.location.href = '/dashboard'
-      // }
 
       return data
     } catch (err) {
@@ -69,7 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
       const freshUser = await authApi.getProfile();
       user.value = freshUser;
 
-      // تحديث localStorage
       localStorage.setItem("cf_user", JSON.stringify(freshUser));
 
       console.log("✅ User data refreshed:", freshUser.plan);

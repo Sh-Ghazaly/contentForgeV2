@@ -18,7 +18,7 @@ export function useNotifications() {
           if (!n.read) unreadCount.value++
         }
       })
-    } catch { /* ignore */ }
+    } catch { }
   }
 
   const notifications = computed(() =>

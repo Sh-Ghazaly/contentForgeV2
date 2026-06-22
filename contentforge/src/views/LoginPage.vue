@@ -44,7 +44,6 @@
         <p class="left-footer">{{ t("auth.copyright") }}</p>
       </div>
     </div>
-    <!-- <a href="https://content-forge-v2.vercel.app/api/auth/google">سجل دخولك عبر جوجل</a> -->
     <!-- Right panel -->
     <div class="login-right">
       <!-- Back to home — mobile only -->
@@ -122,7 +121,7 @@
       </div>
 
       <div class="form-wrap">
-        <!-- ── OTP view (registration) ── -->
+        <!-- OTP view (registration) -->
         <div v-if="showOTP" class="form-inner">
           <div class="form-head">
             <div class="form-icon">📬</div>
@@ -215,7 +214,7 @@
           </div>
         </div>
 
-        <!-- ── FORGOT: Step 1 — Email ── -->
+        <!-- FORGOT: Step 1 : Email -->
         <div v-else-if="forgotStep === 'email'" class="form-inner">
           <div class="form-head">
             <div class="form-icon">🔑</div>
@@ -285,7 +284,7 @@
           </p>
         </div>
 
-        <!-- ── FORGOT: Step 2 — OTP (reuses verify-email endpoint) ── -->
+        <!-- FORGOT: Step 2 : OTP (reuses verify-email endpoint) -->
         <div v-else-if="forgotStep === 'otp'" class="form-inner">
           <div class="form-head">
             <div class="form-icon">📬</div>
@@ -377,7 +376,7 @@
           </p>
         </div>
 
-        <!-- ── FORGOT: Step 3 — New password (reuses change-password endpoint) ── -->
+        <!-- FORGOT: Step 3 : New password (reuses change-password endpoint) -->
         <div v-else-if="forgotStep === 'reset'" class="form-inner">
           <div class="form-head">
             <div class="form-icon">🔒</div>
@@ -516,7 +515,7 @@
           </button>
         </div>
 
-        <!-- ── Login / Register view ── -->
+        <!-- Login / Register view -->
         <div v-else class="form-inner">
           <div class="form-head">
             <h1 class="form-title">
@@ -776,14 +775,12 @@ const { isDark, toggle: toggleTheme } = useTheme();
 const router = useRouter();
 const route = useRoute();
 
-// Extract the plan and billing info if they exist in the URL
-const targetPlan = route.query.plan; // Will be 'pro' or 'enterprise'
-const targetBilling = route.query.billing; // Will be 'annual' or 'monthly'
-const redirectPath = route.query.redirect; // The page they were on before clicking login
+const targetPlan = route.query.plan; 
+const targetBilling = route.query.billing; 
+const redirectPath = route.query.redirect; 
 
 const authStore = useAuthStore();
 
-// ── Core state ────────────────────────────────────────────────────────────────
 const showOTP = ref(false);
 const otpCode = ref("");
 const isRegister = ref(false);
@@ -805,13 +802,11 @@ const form = ref({
 const otpInputs = ref(["", "", "", "", "", ""]);
 const inputRefs = ref([]);
 
-// ── Resend OTP (registration) ─────────────────────────────────────────────────
 const resendLoading = ref(false);
 const resendCooldown = ref(0);
 let cooldownTimer = null;
 
-// ── Forgot password state ─────────────────────────────────────────────────────
-const forgotStep = ref(null); // null | 'email' | 'otp' | 'reset'
+const forgotStep = ref(null); 
 const forgotEmail = ref("");
 const forgotOtpInputs = ref(["", "", "", "", "", ""]);
 const forgotOtpRefs = ref([]);
@@ -823,7 +818,6 @@ const showResetPass = ref(false);
 const showResetConfirm = ref(false);
 const resetForm = ref({ newPassword: "", confirmPassword: "" });
 
-// ── OTP handlers (registration) ───────────────────────────────────────────────
 const handleOtpInput = (index, event) => {
   if (event.target.value && index < 5) inputRefs.value[index + 1].focus();
 };
@@ -832,7 +826,6 @@ const handleOtpKeyDown = (index, event) => {
     inputRefs.value[index - 1].focus();
 };
 
-// ── OTP handlers (forgot) ─────────────────────────────────────────────────────
 function handleForgotOtpInput(index, event) {
   if (event.target.value && index < 5) forgotOtpRefs.value[index + 1]?.focus();
 }
@@ -841,7 +834,6 @@ function handleForgotOtpKeyDown(index, event) {
     forgotOtpRefs.value[index - 1]?.focus();
 }
 
-// ── Post-auth redirect: payment flow vs normal flow ───────────────────────────
 
 
 onMounted(async () => {
@@ -853,7 +845,6 @@ onMounted(async () => {
   }
 });
 
-// ── Resend OTP (registration) ─────────────────────────────────────────────────
 async function resendOtp() {
   resendLoading.value = true;
   error.value = null;
@@ -874,7 +865,6 @@ async function resendOtp() {
   }
 }
 
-// ── Resend OTP (forgot password) ──────────────────────────────────────────────
 async function resendForgotOtp() {
   forgotResendLoading.value = true;
   error.value = null;
@@ -896,26 +886,16 @@ async function resendForgotOtp() {
   }
 }
 
-// ── Post-auth redirect: checkout flow vs normal dashboard ─────────────────────
-/**
- * If the user arrived here via a "Try Now" click on Pro/Enterprise
- * (PricingSection.vue or TrialExpiredPage.vue pass plan + billing in the query),
- * send them straight to the payment API after successful login/register.
- * Otherwise fall back to normal dashboard/admin routing.
- */
-// ✅ NEW: Unified Redirect Logic
+
 async function handlePostLoginRedirect(user) {
   const targetPlan = route.query.plan;
   const targetBilling = route.query.billing;
   const targetRedirect = route.query.redirect;
 
-  // 1. Admin check (Admins have no plans)
   if (user?.isAdmin) { router.push("/admin"); return; }
 
-  // 2. Trial Expired check
   if (user?.trialExpired) { router.push("/trial-expired"); return; }
 
-  // 3. 🌟 SPECIAL CASE: Came from "Try Now" AND it's a PAID plan -> Stripe
   if (targetPlan && targetPlan !== 'free' && targetBilling) {
     try {
       const paymentKey = `${targetPlan}_${targetBilling}`;
@@ -924,7 +904,6 @@ async function handlePostLoginRedirect(user) {
     } catch (e) { console.error("Checkout failed:", e); }
   }
 
-  // 4. 🛡️ FALLBACK: Normal flow (Free plan, Get Started, Navbar Sign In)
   if (targetRedirect && typeof targetRedirect === 'string' && targetRedirect.startsWith('/')) {
     router.push(targetRedirect);
   } else {
@@ -932,8 +911,7 @@ async function handlePostLoginRedirect(user) {
   }
 }
 
-// ── Submit (login / register) ─────────────────────────────────────────────────
-// ✅ UPDATED SUBMIT FUNCTION
+
 async function submit() {
   error.value = null;
   if (!form.value.email || !form.value.password) { error.value = t("auth.errorFillAll"); return; }
@@ -951,25 +929,29 @@ async function submit() {
       successKey.value = "auth.checkEmail";
       showOTP.value = true;
     } else {
-      await authStore.login(form.value); // No longer forces redirect!
+      await authStore.login(form.value);
       await nextTick();
       
       if (localStorage.getItem("cf_token")) {
         const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
-        await handlePostLoginRedirect(user); // ✅ Handles everything cleanly
+        await handlePostLoginRedirect(user);
       } else {
         error.value = t("auth.errorTokenMissing");
       }
     }
   } catch (err) {
+
+    if (err.reason === 'blocked') {
+      router.push('/account-suspended?reason=blocked');
+      return;
+    }
     error.value = err.message || t("auth.errorGeneric");
   } finally {
     loading.value = false;
   }
 }
 
-// ── Verify email OTP (registration) ──────────────────────────────────────────
-// ✅ UPDATED VERIFY EMAIL FUNCTION
+
 async function verifyEmail() {
   error.value = null;
   loading.value = true;
@@ -980,12 +962,12 @@ async function verifyEmail() {
     });
     successKey.value = "auth.verifiedSuccess";
     
-    await authStore.login(form.value); // Auto-login after verification
+    await authStore.login(form.value); 
     await nextTick();
     
     if (localStorage.getItem("cf_token")) {
       const user = JSON.parse(localStorage.getItem("cf_user") || "{}");
-      await handlePostLoginRedirect(user); // ✅ Uses the same clean logic
+      await handlePostLoginRedirect(user); 
     }
   } catch (err) {
     error.value = err.response?.data?.message || t("auth.errorInvalidCode");
@@ -994,7 +976,6 @@ async function verifyEmail() {
   }
 }
 
-// ── FORGOT Step 1: Send OTP ───────────────────────────────────────────────────
 async function sendForgotOtp() {
   if (!forgotEmail.value) {
     error.value = t("auth.errorFillAll");
@@ -1021,7 +1002,6 @@ async function sendForgotOtp() {
   }
 }
 
-// ── FORGOT Step 2: Verify OTP → move to password reset ────────────────────────
 async function verifyForgotOtp() {
   const otp = forgotOtpInputs.value.join("");
   if (otp.length < 6) {
@@ -1045,7 +1025,6 @@ async function verifyForgotOtp() {
   }
 }
 
-// ── FORGOT Step 3: Set new password → redirect to login ───────────────────────
 async function submitReset() {
   if (!resetForm.value.newPassword || !resetForm.value.confirmPassword) {
     error.value = t("auth.errorFillAll");
@@ -1069,11 +1048,9 @@ async function submitReset() {
       newPassword: resetForm.value.newPassword,
     });
 
-    // Clear any leftover tokens from the auto-login in resetPassword
     localStorage.removeItem("cf_token");
     localStorage.removeItem("cf_user");
 
-    // Force a full page reload to the login page with success message
     window.location.href = "/login?reset=success";
   } catch (err) {
     error.value =

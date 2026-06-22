@@ -10,14 +10,12 @@ const { TopPost, Brand } = require("../models");
 const { embedBrandVault } = require("../services/embeddingService");
 const he = require("he");
 
-// ── Multer for doc/image uploads ──────────────────────────────────────────────
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
 });
 const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-// ── GET /api/top-posts/:brandId ───────────────────────────────────────────────
 router.get("/:brandId", protect, async (req, res) => {
   const posts = await TopPost.find({ brand: req.params.brandId }).sort(
     "-createdAt",
@@ -25,7 +23,6 @@ router.get("/:brandId", protect, async (req, res) => {
   res.json(posts);
 });
 
-// ── POST /api/top-posts/:brandId/manual ──────────────────────────────────────
 router.post("/:brandId/manual", protect, async (req, res) => {
   const post = await TopPost.create({
     brand: req.params.brandId,
@@ -40,27 +37,23 @@ router.post("/:brandId/manual", protect, async (req, res) => {
   res.json(post);
 });
 
-// ── POST /api/top-posts/:brandId/from-link ────────────────────────────────────
-// يجيب OG metadata من الـ link ويرجع بيانات جاهزة لليوزر يراجعها
+
 router.post("/:brandId/from-link", protect, async (req, res) => {
   const { url } = req.body;
   if (!url) return res.status(400).json({ message: "URL required" });
 
   try {
-    // نجيب الـ HTML ونستخرج OG tags
     const html = await fetchHtml(url);
     const meta = extractOgMeta(html);
 
-    // نحدد المنصة من الـ URL
     const platform = detectPlatform(url);
 
-    // 🌟 التعديل السحري هنا: بنمرر النص على دالة he.decode عشان يرجع عربي طبيعي
     const rawContent = meta.description || meta.title || "";
     const cleanContent = he.decode(rawContent);
 
     res.json({
       platform,
-      content: cleanContent, // نرسل النص النظيف والخالي من الرموز المشوهة
+      content: cleanContent, 
       imageUrl: meta.image || "",
       postUrl: url,
       stats: {
@@ -81,14 +74,12 @@ router.post("/:brandId/from-link", protect, async (req, res) => {
   }
 });
 
-// ── POST /api/top-posts/:brandId/from-doc ─────────────────────────────────────
-// يرفع ملف (PDF / DOCX / صورة سكرين شوت) والـ AI يستخرج البيانات منه
+
 router.post(
   "/:brandId/from-doc",
   protect,
-  upload.single("file"), // الـ key هنا يجب أن يكون 'file' في الـ FormData بالفرونت إند
+  upload.single("file"),
   async (req, res) => {
-    // إذا وصلنا هنا ورأينا الرسالة، فالمشكلة حُلت
     if (!req.file) {
       return res
         .status(400)
@@ -98,7 +89,6 @@ router.post(
     try {
       const ext = path.extname(req.file.originalname).toLowerCase();
 
-      // 🔥 1. إذا كان الملف سكرين شوت (صورة)، نتوجّه مباشرة للدالة الذكية الجديدة
       if ([".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
         const imageData = fs.readFileSync(req.file.path).toString("base64");
 
@@ -110,11 +100,9 @@ router.post(
           ext,
         );
 
-        // نرسل الـ JSON المستخرج مباشرة للفرونت إند
         return res.json({ ...extractedData, source: "doc" });
       }
 
-      // ── 2. معالجة المستندات النصية (PDF / DOCX) ──
       let text = "";
 
       if (ext === ".pdf") {
@@ -134,7 +122,6 @@ router.post(
           .json({ message: "Could not extract text from document" });
       }
 
-      // استخراج البيانات المنظمة للمستندات النصية
       const extracted = await extractPostDataFromImageWithAI(text);
       res.json({ ...extracted, source: "doc" });
     } catch (err) {
@@ -143,7 +130,6 @@ router.post(
         .status(500)
         .json({ message: "AI Extraction failed", error: err.message });
     } finally {
-      // حذف الملف المؤقت دائماً لحفظ مساحة السيرفر
       if (req.file && fs.existsSync(req.file.path)) {
         fs.unlink(req.file.path, () => {});
       }
@@ -151,8 +137,7 @@ router.post(
   },
 );
 
-// ── POST /api/top-posts/:brandId/save-extracted ───────────────────────────────
-// بعد ما اليوزر يراجع البيانات المستخرجة يحفظها
+
 router.post("/:brandId/save-extracted", protect, async (req, res) => {
   const post = await TopPost.create({
     brand: req.params.brandId,
@@ -167,8 +152,7 @@ router.post("/:brandId/save-extracted", protect, async (req, res) => {
   res.json(post);
 });
 
-// ── POST /api/top-posts/:brandId/embed ────────────────────────────────────────
-// يعمل re-embed للـ RAG بعد إضافة / تعديل البوستات
+
 router.post("/:brandId/embed", protect, async (req, res) => {
   const [brand, posts] = await Promise.all([
     Brand.findById(req.params.brandId),
@@ -184,7 +168,6 @@ router.post("/:brandId/embed", protect, async (req, res) => {
     Platforms: ${brand.platforms?.join(", ")}.
   `;
 
-  // نبني نص RAG من كل البوستات + stats
   const postsText = posts.length
     ? posts
         .map(
@@ -200,19 +183,16 @@ Why it worked: High engagement post — use similar tone and structure.
 
   const count = await embedBrandVault(brand._id, guidelinesText, postsText);
 
-  // نحدد كل البوستات كـ embedded
   await TopPost.updateMany({ brand: req.params.brandId }, { embedded: true });
 
   res.json({ message: `Embedded ${count} chunks`, postsCount: posts.length });
 });
 
-// ── DELETE /api/top-posts/:id ─────────────────────────────────────────────────
 router.delete("/:id", protect, async (req, res) => {
   await TopPost.findByIdAndDelete(req.params.id);
   res.json({ message: "Post deleted" });
 });
 
-// ── PUT /api/top-posts/:id ────────────────────────────────────────────────────
 router.put("/:id", protect, async (req, res) => {
   const post = await TopPost.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -220,7 +200,6 @@ router.put("/:id", protect, async (req, res) => {
   res.json(post);
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 async function fetchHtml(url) {
   const { data } = await axios.get(url, {
     timeout: 8000,
@@ -282,7 +261,6 @@ async function extractTextFromImage(base64Data, ext) {
   return result.response.text();
 }
 
-// تعديل الدالة المساعدة في أسفل الملف لتستخرج الـ JSON مباشرة من الصورة!
 async function extractPostDataFromImageWithAI(base64Data, ext) {
   const mimeMap = {
     ".jpg": "image/jpeg",

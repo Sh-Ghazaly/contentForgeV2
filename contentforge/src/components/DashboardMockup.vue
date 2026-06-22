@@ -563,7 +563,6 @@ const trends = [
 
 const topTrendTag = "سلاح ذووي";
 
-// 7 columns x rows, with posts on Jun 12,13,15,16,18,19,22,24
 const postCopies = {
   12: "أحلى لحظة بعد أذان الفجر هي قهوة كوريا التي تنظفك من الداخل، ابدأ يومك بنشاط...",
   13: "الكل يسأل عن أسعار الذهب اليوم 11/6/2026، بس عرابي كوفي القهوة المثالية لي أي نوع...",
@@ -587,7 +586,6 @@ const platformByDate = {
 };
 
 function buildWeeks() {
-  // June 2026: Jun 1 = Monday
   const weeks = [];
   let day = 1;
   for (let w = 0; w < 4 && day <= 30; w++) {
@@ -612,7 +610,7 @@ function buildWeeks() {
     }
     weeks.push(row);
   }
-  return weeks.slice(1, 4); // show weeks containing Jun 8 - Jun 28 (matches preview range roughly)
+  return weeks.slice(1, 4);
 }
 
 const weeks = buildWeeks();

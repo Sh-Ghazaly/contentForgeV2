@@ -8,14 +8,12 @@ const sharp = require("sharp");
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const HF_TOKEN = process.env.HF_API_TOKEN;
 
-// ── إعدادات Hugging Face ────────────────────────────────────
 const HF_GENERATION_URL =
   "https://router.huggingface.co/together/v1/images/generations";
 const HF_MODEL = "black-forest-labs/FLUX.1-schnell";
 const HF_RM_BG_URL =
   "https://api-inference.huggingface.co/models/not-lain/background-removal";
 
-// ── 1. إزالة خلفية الشعار تلقائياً (Free via Hugging Face) ──
 async function removeBackgroundWithRemoveBG(imageBuffer) {
   if (!process.env.REMOVE_BG_API_KEY) {
     console.warn("[PosterService] REMOVE_BG_API_KEY not found");
@@ -47,7 +45,6 @@ async function removeBackgroundWithRemoveBG(imageBuffer) {
   }
 }
 
-// ── 2. تحليل الصورة واستخراج البرومبت عبر Gemini ─────────────
 async function buildPosterPrompt(imagePath, userPrompt) {
   try {
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
@@ -85,7 +82,6 @@ async function buildPosterPrompt(imagePath, userPrompt) {
   }
 }
 
-// ── 3. توليد خلفية البوستر عبر HF Router (NScale) ───────────
 async function generateBackground(prompt, width = 1024, height = 1024) {
   if (!HF_TOKEN) throw new Error("HF_API_TOKEN غير موجود في ملف .env");
 
@@ -125,38 +121,34 @@ async function generateBackground(prompt, width = 1024, height = 1024) {
   }
 }
 
-// ── 4. دمج الشعار الأصلي فوق البوستر المولد باستخدام Sharp (In-Memory) ──
 async function compositeLogo(backgroundBuffer, originalLogoPath) {
   try {
     let logoBuffer = fs.readFileSync(originalLogoPath);
 
-    // ✨ الخطوة الجديدة: محاولة إزالة الخلفية تلقائياً
     console.log("[PosterService] Attempting to remove logo background...");
     logoBuffer = await removeBackgroundWithRemoveBG(logoBuffer);
 
     const bgMetadata = await sharp(backgroundBuffer).metadata();
-    const logoResizeWidth = Math.floor(bgMetadata.width * 0.25); // 25% من عرض البوستر
+    const logoResizeWidth = Math.floor(bgMetadata.width * 0.25); 
 
     const processedLogo = await sharp(logoBuffer)
       .resize(logoResizeWidth, null, { fit: "inside" })
       .toBuffer();
 
-    // ✅ توليد الصورة النهائية في الذاكرة (Buffer) بدلاً من حفظها في الملفات
     const finalImageBuffer = await sharp(backgroundBuffer)
       .composite([
         {
           input: processedLogo,
           gravity: "southeast",
-          top: 35, // offset من الأسفل للأعلى
-          left: 35, // offset من اليمين لليسار
+          top: 35,
+          left: 35,
         },
       ])
       .png()
-      .toBuffer(); // ✅ استخدمنا toBuffer بدلاً من toFile
+      .toBuffer(); 
 
     console.log("[PosterService] Logo composited successfully in memory!");
     
-    // ✅ تحويل الـ Buffer إلى Base64 Data URL
     const base64 = finalImageBuffer.toString('base64');
     return `data:image/png;base64,${base64}`;
     
@@ -166,19 +158,17 @@ async function compositeLogo(backgroundBuffer, originalLogoPath) {
   }
 }
 
-// ── الدالة الرئيسية التي يستدعيها الـ Controller ─────────────
-// ── الدالة الرئيسية التي يستدعيها الـ Controller ─────────────
+
 async function generatePoster(imagePath, userPrompt) {
   console.log("[PosterService] Starting poster generation pipeline...");
 
   const prompt = await buildPosterPrompt(imagePath, userPrompt);
   const backgroundBuffer = await generateBackground(prompt, 1024, 1024);
 
-  // ✅ لم نعد بحاجة إلى outputDir، الدالة ستعيد Base64 مباشرة
   const imageUrl = await compositeLogo(backgroundBuffer, imagePath);
 
   return {
-    imageUrl: imageUrl, // ✅ Base64 Data URL (جاهز للحفظ في قاعدة البيانات)
+    imageUrl: imageUrl, 
     prompt: prompt,
   };
 }

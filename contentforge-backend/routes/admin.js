@@ -12,7 +12,6 @@ const {
   emailServices
 } = require("../services/emailService");
 
-// ── GET /api/admin/stats ──────────────────────────────────────────────────────
 router.get("/stats", adminOnly, async (req, res) => {
   try {
     const now = new Date();
@@ -116,7 +115,6 @@ router.get("/stats", adminOnly, async (req, res) => {
   }
 });
 
-// ── GET /api/admin/settings ───────────────────────────────────────────────────
 router.get("/settings", adminOnly, async (req, res) => {
   try {
     let settings = await PlatformSettings.findOne();
@@ -126,105 +124,6 @@ router.get("/settings", adminOnly, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-
-// ── PUT /api/admin/settings ───────────────────────────────────────────────────
-// router.put("/settings", adminOnly, async (req, res) => {
-//   try {
-//     const { trialDays, blockByPhone, otpExpiryMinutes, sendExpiryWarning } =
-//       req.body;
-
-//     let settings = await PlatformSettings.findOne();
-//     if (!settings) settings = await PlatformSettings.create({});
-
-//     const trialDaysChanged = Number(settings.trialDays) !== Number(trialDays);
-//     const phoneBlockChanged = settings.blockByPhone !== blockByPhone;
-//     settings.trialDays = trialDays;
-//     settings.blockByPhone = blockByPhone;
-//     settings.otpExpiryMinutes = otpExpiryMinutes;
-//     settings.sendExpiryWarning = sendExpiryWarning;
-//     await settings.save();
-
-//     const totalTrialUsers =  User.countDocuments({ isTrial: true, plan: "free" });
-//     let updatedUsers = 0;
-
-//     if (phoneBlockChanged) {
-//       if (blockByPhone) {
-//         // تفعيل المنع: إنشاء Index فريد (Unique)
-//          User.collection.createIndex({ phone: 1 }, { unique: true, sparse: true });
-//       } else {
-//         // إلغاء المنع: حذف الـ Index
-//         try { await User.collection.dropIndex("phone_1"); } catch (e) {}
-//       }
-//         }
-//         res.json({ message: "Settings saved", updatedUsers });
-//       } catch (err) {
-//         res.status(500).json({ message: err.message });
-//       }
-//         });
-
-//     if (trialDaysChanged) {
-//       const trialUsers = await User.find({ isTrial: true, plan: "free", isAdmin: { $ne: true } });
-
-//       await Promise.all(
-//         trialUsers.map(async (user) => {
-//           const start = new Date(user.createdAt);
-//           const newEnd = new Date(start);
-//           newEnd.setDate(newEnd.getDate() + trialDays);
-
-//           user.planEndsAt = newEnd;
-//           await user.save();
-
-//           sendTrialUpdateEmail(user.email, user.name, trialDays, newEnd).catch(
-//             (err) => console.error(`Email error:`, err.message),
-//           );
-
-//           try {
-//             await createNotification({
-//               recipientId: user._id,
-//               recipientRole: "user",
-//               type: "trial_extended",
-//               title: "Trial Extended",
-//               message: `Your free trial has been extended to ${trialDays} days. New end date: ${newEnd.toLocaleDateString("ar-EG")}`,
-//               meta: { newDays: trialDays, newEndDate: newEnd },
-//             });
-//           } catch (err) {
-//             console.error(
-//               "[Notify] Trial extension notification failed:",
-//               err.message,
-//             );
-//           }
-//         }),
-//       );
-
-//       updatedUsers = trialUsers.length;
-//     }
-
-//     try {
-//       const allUsers = await User.find({
-//         isAdmin: { $ne: true },
-//         _id: { $ne: req.user?._id },
-//         "deletionRequest.isDeleted": { $ne: true },
-//       });
-//       for (const u of allUsers) {
-//         await createNotification({
-//           recipientId: u._id,
-//           recipientRole: "user",
-//           type: "admin_settings_changed",
-//           title: "Platform Settings Updated",
-//           message:
-//             "The platform settings have been updated. Please check if anything affects your account.",
-//           meta: { changedBy: req.user?._id },
-//         });
-//       }
-//     } catch (err) {
-//       console.error("[Notify] User settings notification failed:", err.message);
-//     }
-
-//     res.json({ message: "Settings saved", updatedUsers });
-//   } catch (err) {
-//     res.status(500).json({ message: err.message });
-//   }
-// });
 
 router.put("/settings", adminOnly, async (req, res) => {
   try {
@@ -243,7 +142,6 @@ router.put("/settings", adminOnly, async (req, res) => {
 
     let updatedUsers = 0;
 
-    // 2. تحديث الـ Trials
     if (trialDaysChanged) {
       const trialUsers = await User.find({ isTrial: true, plan: "free", isAdmin: { $ne: true } });
       await Promise.all(
@@ -275,20 +173,6 @@ router.put("/settings", adminOnly, async (req, res) => {
       updatedUsers = trialUsers.length;
     }
 
-    // 3. الإشعارات العامة
-    // try {
-    //   const allUsers = await User.find({ isAdmin: { $ne: true }, "deletionRequest.isDeleted": { $ne: true } });
-    //   for (const u of allUsers) {
-    //     await createNotification({
-    //       recipientId: u._id,
-    //       recipientRole: "user",
-    //       type: "admin_settings_changed",
-    //       title: "Platform Settings Updated",
-    //       message: "The platform settings have been updated.",
-    //     });
-    //   }
-    // } catch (err) { console.error(err.message); }
-
     try {
   const allUsers = await User.find({ 
     isAdmin: { $ne: true }, 
@@ -297,8 +181,6 @@ router.put("/settings", adminOnly, async (req, res) => {
      plan: "free"
   });
 
-  // بدلاً من await داخل الـ loop، نستخدم Promise.all لترسل الإشعارات دفعة واحدة
-  // ونضعها داخل دالة لا تعطل الـ API
   Promise.all(allUsers.map(u => 
     createNotification({
       recipientId: u._id,
@@ -309,7 +191,6 @@ router.put("/settings", adminOnly, async (req, res) => {
     }).catch(err => console.error("فشل إشعار مستخدم:", err.message))
   ));
 
-  // نرد على المستخدم فوراً دون انتظار انتهاء كل الإشعارات
 } catch (err) { 
   console.error("خطأ في جلب المستخدمين:", err.message); 
 }
@@ -319,7 +200,6 @@ router.put("/settings", adminOnly, async (req, res) => {
   }
 });
 
-// ── GET /api/admin/users ──────────────────────────────────────────────────────
 router.get("/users", adminOnly, async (req, res) => {
   try {
     const { page = 1, limit = 20, search = "", plan } = req.query;
@@ -356,7 +236,6 @@ router.get("/users", adminOnly, async (req, res) => {
   }
 });
 
-// ── PUT /api/admin/users/:id/block ───────────────────────────────────────────
 router.put("/users/:id/block", adminOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -364,7 +243,6 @@ router.put("/users/:id/block", adminOnly, async (req, res) => {
     if (user.isAdmin)
       return res.status(403).json({ message: "Cannot block an admin" });
 
-    // ── UNBLOCK BRANCH ───────────────────────────────────────────────────────
     if (user.isBlocked || user.moderation.blockStatus === "blocked" || user.moderation.blockStatus === "warning") {
       user.isBlocked = false;
       user.moderation.blockStatus = "none";
@@ -400,7 +278,6 @@ router.put("/users/:id/block", adminOnly, async (req, res) => {
       });
     }
 
-    // ── WARNING BRANCH ───────────────────────────────────────────────────────
     const { reason } = req.body;
     if (!reason)
       return res.status(400).json({ message: "Please provide a reason" });
@@ -447,7 +324,6 @@ router.put("/users/:id/block", adminOnly, async (req, res) => {
   }
 });
 
-// ── DELETE /api/admin/users/:id ───────────────────────────────────────────────
 router.delete("/users/:id", adminOnly, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -461,7 +337,6 @@ router.delete("/users/:id", adminOnly, async (req, res) => {
   }
 });
 
-// ── GET /api/admin/plans ──────────────────────────────────────────────────────
 router.get("/plans", adminOnly, async (req, res) => {
   try {
     const now = new Date();
@@ -515,7 +390,6 @@ router.get("/plans", adminOnly, async (req, res) => {
   }
 });
 
-// ── GET /api/admin/trends ─────────────────────────────────────────────────────
 router.get("/trends", adminOnly, async (req, res) => {
   try {
     const trends = await Trend.find().sort({ velocity: -1 }).limit(20);
@@ -550,7 +424,6 @@ router.get("/trends", adminOnly, async (req, res) => {
   }
 });
 
-// ── PUT /api/admin/users/:id/approve-deletion ───────────────────────────────
 router.put("/users/:id/approve-deletion", adminOnly, async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
@@ -568,7 +441,6 @@ router.put("/users/:id/approve-deletion", adminOnly, async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
-// ── POST /api/admin/trigger-expiry-warnings ───────────────────────────────────
 router.post('/trigger-expiry-warnings', adminOnly, async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne()
@@ -584,81 +456,6 @@ router.post('/trigger-expiry-warnings', adminOnly, async (req, res) => {
   }
 })
 
-// ── PUT /api/admin/settings/trial-days ───────────────────────────────────────
-// router.put("/settings/trial-days", adminOnly, async (req, res) => {
-//   try {
-//     const { trialDays } = req.body;
-
-//     if (!trialDays || trialDays < 1 || trialDays > 90)
-//       return res
-//         .status(400)
-//         .json({ message: "trialDays must be between 1 and 90" });
-
-//     const trialUsers = await User.find({ isTrial: true, plan: "free", isAdmin: { $ne: true } });
-
-//     await Promise.all(
-//       trialUsers.map(async (user) => {
-//         const start = new Date(user.createdAt);
-//         const newEnd = new Date(start);
-//         newEnd.setDate(newEnd.getDate() + trialDays);
-
-//         user.planEndsAt = newEnd;
-//         await user.save();
-
-//         sendTrialUpdateEmail(user.email, user.name, trialDays, newEnd).catch(
-//           (err) => console.error(`Email error for ${user.email}:`, err.message),
-//         );
-
-//         try {
-//           await createNotification({
-//             recipientId: user._id,
-//             recipientRole: "user",
-//             type: "trial_extended",
-//             title: "Trial Extended",
-//             message: `Your free trial has been extended to ${trialDays} days. New end date: ${newEnd.toLocaleDateString("ar-EG")}`,
-//             meta: { newDays: trialDays, newEndDate: newEnd },
-//           });
-//         } catch (err) {
-//           console.error(
-//             "[Notify] Trial extension notification failed:",
-//             err.message,
-//           );
-//         }
-//       }),
-//     );
-
-//     try {
-//       const admins = await User.find({ isAdmin: true });
-//       for (const admin of admins) {
-//         await createNotification({
-//           recipientId: admin._id,
-//           recipientRole: "admin",
-//           type: "admin_settings_changed",
-//           title: "Trial Days Updated",
-//           message: `Trial period updated to ${trialDays} days for ${trialUsers.length} users.`,
-//           meta: {
-//             trialDays,
-//             affectedUsers: trialUsers.length,
-//             updatedBy: req.user?._id,
-//           },
-//         });
-//       }
-//     } catch (err) {
-//       console.error("[Notify] Admin notification failed:", err.message);
-//     }
-
-//     res.json({
-//       message: `Updated ${trialUsers.length} users successfully`,
-//       updatedCount: trialUsers.length,
-//     });
-//   } catch (err) {
-//     console.error("Trial update error:", err.message);
-//     res.status(500).json({ message: err.message });
-//   }
-// });
-
-// ── PUT /api/admin/users/:id ───────────────────────────────
-// Main endpoint for updating user data (plan, subscription, etc.)
 router.put("/users/:id", adminOnly, async (req, res) => {
   try {
     const {
@@ -682,33 +479,33 @@ router.put("/users/:id", adminOnly, async (req, res) => {
     const updateData = { isVerified, isAdmin, subscriptionType };
     const PLANS = {
     free: {
-      maxAiImagesPerMonth: 3, // استناداً إلى "up to 3 posts"
-      maxPostsPerCalendar: 5, // (قيمة افتراضية حسب السكيما)
-      maxCalendarsPerMonth: 1, // (قيمة افتراضية حسب السكيما)
-      maxBrands: 1, // (قيمة افتراضية حسب السكيما)
-      advancedAnalytics: false, // "Standard feature set (Top Posts excluded)"
-      multiDialectSupport: false, // "Core Arabic dialects support only"
-      automatedReels: false, // غير مذكور في Free
+      maxAiImagesPerMonth: 3,
+      maxPostsPerCalendar: 5, 
+      maxCalendarsPerMonth: 1, 
+      maxBrands: 1, 
+      advancedAnalytics: false, 
+      multiDialectSupport: false, 
+      automatedReels: false,
       prioritySupport: false,
     },
     pro: {
-      maxAiImagesPerMonth: 10, // بناءً على تقدير منطقي لـ "1 image per post"
+      maxAiImagesPerMonth: 10,
       maxPostsPerCalendar: 20,
       maxCalendarsPerMonth: 5,
       maxBrands: 3,
-      advancedAnalytics: true, // "Advanced Top Posts performance analytics"
-      multiDialectSupport: true, // "Expanded multi-dialect Arabic support"
-      automatedReels: false, // غير مذكور في Pro
+      advancedAnalytics: true, 
+      multiDialectSupport: true, 
+      automatedReels: false,
       prioritySupport: false,
     },
     enterprise: {
-      maxAiImagesPerMonth: 20, // حد أعلى للـ Enterprise
+      maxAiImagesPerMonth: 20, 
       maxPostsPerCalendar: 35,
       maxCalendarsPerMonth: 15,
       maxBrands: 10,
-      advancedAnalytics: true, // "Comprehensive"
-      multiDialectSupport: true, // "Comprehensive"
-      automatedReels: true, // "Automated AI Reels generation"
+      advancedAnalytics: true, 
+      multiDialectSupport: true,
+      automatedReels: true, 
       prioritySupport: true,
     }
   };
@@ -749,7 +546,6 @@ router.put("/users/:id", adminOnly, async (req, res) => {
 
     res.json({ user });
 
-    // Send email notification in background (don't block response)
     if (user) {
       if (user.isAdmin && !targetUser.isAdmin) {
         sendAdminPromotionEmail(user.email, user.name).catch((err) =>
@@ -768,7 +564,6 @@ router.put("/users/:id", adminOnly, async (req, res) => {
       }
     }
 
-    // Send in-app notification to user
     if (!isAdmin && plan) {
       try {
         await createNotification({
@@ -789,7 +584,6 @@ router.put("/users/:id", adminOnly, async (req, res) => {
       }
     }
 
-    // Notify admin self
     try {
       await createNotification({
         recipientId: req.user._id,

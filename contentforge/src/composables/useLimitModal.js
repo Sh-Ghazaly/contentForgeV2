@@ -1,7 +1,6 @@
 // src/composables/useLimitModal.js
 import { ref } from "vue";
 
-// ✅ State عالمي (Singleton)
 const isVisible = ref(false);
 const modalData = ref({
   type: "general",
@@ -9,7 +8,6 @@ const modalData = ref({
   message: "",
 });
 
-// ✅ Listen للـ events من interceptor
 if (typeof window !== "undefined") {
   window.addEventListener("show-limit-modal", (event) => {
     modalData.value = event.detail;

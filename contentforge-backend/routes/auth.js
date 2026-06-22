@@ -14,56 +14,16 @@ const signToken = (id) =>
 
 const { PlatformSettings } = require("../models");
 
-///////////////////////////////////////// Google OAuth Routes ───────────────────────────────
 
 const passport = require('passport');
-require('../config/passport'); // Initialize strategies
+require('../config/passport');
 
-// ── Google OAuth ─────────────────────────────────────────────────────────────
 router.get('/google', passport.authenticate('google', { 
   scope: ['profile', 'email'],
   session: false 
 }));
 
-// router.get('/google/callback',
-//   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
-//   (req, res) => {
-//     const token = signToken(req.user._id);
-//     // Redirect to frontend with token
-//     const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login-success?token=${token}&provider=google`;
-//     res.redirect(redirectUrl);
-//   }
-// );
-// router.get('/google/callback', (req, res, next) => {
-//   // نقوم بتعريف دالة مخصصة للتعامل مع الـ authentication
-//   passport.authenticate('google', { session: false }, (err, user, info) => {
-    
-//     // 1. إذا حدث خطأ في السيرفر
-//     if (err) return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
-    
-//     // 2. إذا فشلت المصادقة (بسبب الحظر مثلاً)
-//     if (!user) {
-//       // نأخذ رسالة الخطأ من الـ passport (info.message) أو نضع رسالة افتراضية
-//       const errorMessage = info?.message || 'google_auth_failed';
-//       return res.redirect(`${process.env.FRONTEND_URL}/login?error=${encodeURIComponent(errorMessage)}`);
-//     }
 
-//     // 3. إذا نجح الدخول، نكمل العمل كالمعتاد
-//     const token = signToken(user._id);
-//     const redirectUrl = `${process.env.FRONTEND_URL}/login-success?token=${token}&provider=google`;
-//     res.redirect(redirectUrl);
-    
-//   })(req, res, next);
-// });
-// router.get('/google/callback',
-//   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_auth_failed' }),
-//   (req, res) => {
-//     const token = signToken(req.user._id);
-//     // Redirect to frontend with token
-//     const redirectUrl = `${process.env.FRONTEND_URL || 'https://content-forge-v2-frontend.vercel.app'}/login-success?token=${token}&provider=google`;
-//     res.redirect(redirectUrl);
-//   }
-// );
 router.get('/google/callback',
   (req, res, next) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
@@ -79,23 +39,13 @@ router.get('/google/callback',
       return res.redirect(`${frontendUrl}/account-suspended?reason=blocked`)
     }
 
-    if (!req.user.isAdmin && req.user.isTrial && req.user.planEndsAt && new Date() > new Date(req.user.planEndsAt)) {
-      return res.redirect(`${frontendUrl}/trial-expired`)
-    }
-
-    if (!req.user.isAdmin && !req.user.isTrial && req.user.planEndsAt && new Date() > new Date(req.user.planEndsAt)) {
-      return res.redirect(`${frontendUrl}/trial-expired`)
-    }
-
     const token = signToken(req.user._id)
     res.redirect(`${frontendUrl}/login-success?token=${token}&provider=google`)
   }
 )
 
 
-// ── Social Login Success Handler (optional API endpoint) ──────────────────────
 router.post('/social-login', async (req, res) => {
-  // Alternative: if you prefer popup flow with token exchange
   const { token } = req.body;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -144,7 +94,6 @@ router.post("/register", async (req, res) => {
     ).toString();
 
     const trialDays = settings.trialDays ?? 14;
-    // const calculatedExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
         const calculatedExpiry = new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000)
 
     const user = await User.create({
@@ -213,43 +162,16 @@ router.post("/login", async (req, res) => {
   return res.status(403).json({
     success: false,
     message: "Your account has been blocked. Please contact support.",
-    reason: 'blocked'  // ← مهم عشان الـ client.js interceptor يشتغل
+    reason: 'blocked'  
   });
+
+  const isTrialExpired = user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt);
+  const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.planEndsAt && new Date() > new Date(user.planEndsAt);
 
   user.lastLoginAt = new Date();
   await user.save();
 
   const token = signToken(user._id);
-
-  // ← ضيفي الـ checks هنا قبل ما ترجعي الـ token
-  // if (user.isBlocked) {
-  //   return res.status(403).json({
-  //     success: false,
-  //     reason: 'blocked',
-  //     redirectUrl: '/account-suspended'
-  //   })
-  // }
-
-  // if (user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt)) {
-  //   return res.status(403).json({
-  //     success: false,
-  //     reason: 'trial_expired',
-  //     redirectUrl: '/trial-expired'
-  //   })
-  // }
-
-  // if (!user.isAdmin && user.planEndsAt && new Date() > new Date(user.planEndsAt)) {
-  //   return res.status(403).json({
-  //     success: false,
-  //     reason: 'subscription_expired',
-  //     redirectUrl: '/billing'
-  //   })
-  // }
-
-  // ✅ REPLACE WITH THIS:
-const isTrialExpired = user.plan === 'free' && user.isTrial && new Date() > new Date(user.planEndsAt);
-const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.planEndsAt && new Date() > new Date(user.planEndsAt);
-
 
   res.json({
     token,
@@ -261,18 +183,15 @@ const isSubscriptionExpired = !user.isAdmin && user.plan !== 'free' && user.plan
       isAdmin: user.isAdmin,
       isTrial: user.isTrial,
       planEndsAt: user.planEndsAt,
-      trialExpired: isTrialExpired,           
-      subscriptionExpired: isSubscriptionExpired ,
+      trialExpired: isTrialExpired,
+      subscriptionExpired: isSubscriptionExpired,
     },
   });
 });
-// router.get("/me", protect, async (req, res) => {
-//   res.json({ recipient: req.user._id, });
-// });
+
 
 router.get("/me", protect, async (req, res) => {
   try {
-    // req.user موجود بالفعل من الـ protect middleware
     const user = await User.findById(req.user._id).select("-password");
 
     if (!user) {
@@ -299,13 +218,11 @@ router.get("/me", protect, async (req, res) => {
 
 router.get("/notifications", protect, async (req, res) => {
   const user = await User.findById(req.user._id).select(
-    // "moderation.blockStatus moderation.restrictionReason moderation.gracePeriodExpiresAt",
     "isBlocked"
   );
 
   const notifs = [];
 
-  // if (user.moderation?.blockStatus === "warning") {
   if(user.isBlocked){
     notifs.push({
       id: "warning-1",
@@ -604,7 +521,7 @@ router.post("/test-notification", protect, async (req, res) => {
     type: "scheduled_tomorrow",
     read: false,
   });
-  res.json({ message: "Test notifications created ✅" });
+  res.json({ message: "Test notifications created" });
 });
 
 router.post("/test-email-simple", protect, async (req, res) => {

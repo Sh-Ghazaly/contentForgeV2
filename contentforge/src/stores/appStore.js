@@ -10,16 +10,12 @@ const _notificationDefs = reactive([
 ])
 
 export const appStore = reactive({
-  // Theme
   darkMode: true,
 
-  // User
   user: { name: 'Noura', brand: 'Araby Coffee', plan: 'pro' },
 
-  // Sidebar collapsed state
   sidebarCollapsed: false,
 
-  // Notifications — resolved computed, re-runs on locale switch
   notifications: computed(() => {
     const t = i18n.global.t
     return _notificationDefs.map(n => ({
@@ -30,7 +26,6 @@ export const appStore = reactive({
     }))
   }),
 
-  // Methods
   toggleTheme() {
     this.darkMode = !this.darkMode
     document.documentElement.classList.toggle('dark', this.darkMode)
@@ -72,7 +67,6 @@ export const appStore = reactive({
     if (saved) {
       this.darkMode = saved === "dark";
     } else {
-      // ✅ إذا لم يختر المستخدم ثيم، نستخدم تفضيلات نظام التشغيل
       this.darkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
     document.documentElement.classList.toggle('dark', this.darkMode)

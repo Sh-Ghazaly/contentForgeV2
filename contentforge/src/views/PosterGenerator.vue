@@ -206,7 +206,6 @@ import { useI18n } from "vue-i18n";
 
 const { t } = useI18n();
 
-// ── State ─────────────────────────────────────────────────────────────────────
 const fileInput = ref(null);
 const selectedFile = ref(null);
 const previewUrl = ref("");
@@ -219,7 +218,6 @@ const isDragging = ref(false);
 const currentStep = ref(0);
 const imageLoaded = ref(false);
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 const quickPrompts = [
   { key: "poster.quick.luxury" },
   { key: "poster.quick.minimalist" },
@@ -244,12 +242,10 @@ const tips = [
   { key: "poster.tips.5" },
 ];
 
-// ── Computed ──────────────────────────────────────────────────────────────────
 const canGenerate = computed(() => {
   return selectedFile.value && prompt.value.trim().length > 10;
 });
 
-// ── Methods ───────────────────────────────────────────────────────────────────
 function handleFileSelect(event) {
   const file = event.target.files[0];
   if (file) processFile(file);
@@ -340,11 +336,9 @@ async function downloadPoster() {
   if (!generatedImageUrl.value) return;
   
   try {
-    // تحميل الصورة كـ Blob
     const response = await fetch(generatedImageUrl.value);
     const blob = await response.blob();
     
-    // إنشاء رابط مؤقت للتحميل
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -353,7 +347,6 @@ async function downloadPoster() {
     link.click();
     document.body.removeChild(link);
     
-    // تنظيف الـ URL المؤقت
     window.URL.revokeObjectURL(url);
   } catch (err) {
     console.error("[PosterGenerator] Download failed:", err);

@@ -3,13 +3,12 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const protect = require("../middleware/auth");
-const { Brand , ChatMessage   } = require("../models");
+const { Brand , ChatMessage, PlatformSettings   } = require("../models");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { retrieveRelevantChunks } = require("../services/embeddingService");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ── GET /api/chat/history/:conversationId ─────────────────────────────────────
 router.get("/history/:conversationId", protect, async (req, res) => {
   try {
     const messages = await ChatMessage.find({
@@ -23,8 +22,7 @@ router.get("/history/:conversationId", protect, async (req, res) => {
   }
 });
 
-// ── GET /api/chat/conversations/:brandId ─────────────────────────────────────
-// Returns a list of all past conversations (grouped by conversationId) for a brand
+
 router.get("/conversations/:brandId", protect, async (req, res) => {
   try {
     const conversations = await ChatMessage.aggregate([
@@ -55,28 +53,24 @@ router.get("/conversations/:brandId", protect, async (req, res) => {
 
 
 
-// POST /api/chat
 router.post("/", protect, async (req, res) => {
   const { message, history, brandId ,conversationId } = req.body;
 
   if (!message) return res.status(400).json({ message: "message is required" });
 
   try {
-     // 1. حفظ رسالة المستخدم
     await ChatMessage.create({
       brand: brandId,
       conversationId,
       sender: "user",
       content: message,
     });
-    // 2. جيب الـ brand context
     let brandContext = "";
     let brand = null;
 
     if (brandId) {
       brand = await Brand.findById(brandId);
       if (brand) {
-        // جيب الـ RAG chunks المتعلقة بالرسالة
         const chunks = await retrieveRelevantChunks(brandId, message).catch(
           () => [],
         );
@@ -85,8 +79,9 @@ router.post("/", protect, async (req, res) => {
           : `Brand: ${brand.name}. Industry: ${brand.industry}. Audience: ${brand.targetAudience}. Tone: ${brand.tones?.join(", ")}. Avoid: ${brand.avoidTopics || "nothing"}.`;
       }
     }
-
-    // 2. ابني الـ system prompt
+// 2. جيب الـ trial days من الـ settings
+    const settings = await PlatformSettings.findOne().lean();
+    const trialDays = settings?.trialDays ?? 14;
     const systemPrompt = `You are ContentForge AI, an expert Arabic and bilingual content strategist.
 ${
   brand
@@ -103,38 +98,32 @@ Avoid: ${brand.avoidTopics || "nothing"}
     : "No brand loaded yet — ask the user to set up their Brand Vault first."
 }
 
-RULES:
+YOUR ALLOWED SCOPE — you may ONLY respond to:
+1. Questions or tasks directly related to the brand above (content creation, captions, hashtags, strategy, tone, audience, posting ideas, content calendar suggestions)
+2. Questions about trending topics and whether a trend suits this specific brand
+3. Questions about how the ContentForge platform works (its features, pages, or how to use the app)
+
+CONTENTFORGE SUBSCRIPTION PLANS — only share if the user explicitly asks about pricing or plans:
+- Free Trial: ${trialDays} days free. Includes: AI image generation for up to 3 posts, standard features (Top Posts excluded), core Arabic dialects, Instagram & Facebook publishing only. Price: $0/month.
+- Pro Plan: $19/month. Includes: 1 AI image per post, advanced Top Posts analytics, expanded multi-dialect Arabic support, additional publishing platforms (coming soon).
+- Enterprise Plan: $49/month. Includes: multiple AI images per post, advanced Top Posts analytics, comprehensive Arabic dialect coverage, additional publishing platforms (coming soon), automated AI Reels generation per post.
+
+
+If the user asks about pricing, plans, or subscription features, explain clearly based on the above.
+
+STRICT RULES:
+- If the user asks about ANYTHING outside this scope (general news, politics, cooking, science, personal advice, random general knowledge, etc.), you must politely refuse and redirect them back to the brand or platform.
+- When refusing, reply in the same language the user used. Use a warm but firm tone, for example: "أنا هنا بس عشان أساعدك في محتوى براند ${brand?.name || "الخاص بك"} وكل ما يخص ContentForge. إيه اللي تحب تعمله للبراند؟"
 - Reply in the same language the user writes in (Arabic or English)
 - For Arabic, always use the brand's specified dialect: ${brand?.dialects?.[0] || "Modern Standard Arabic"}. Never assume Egyptian dialect unless it's explicitly set in the brand settings.
 - When generating posts, always include Arabic copy + hashtags
 - Keep responses concise and actionable
+- Be concise. Answer ONLY what was asked — do not volunteer extra information about plans, features, or other topics unless explicitly asked.
+- Never mention subscription plans unless the user specifically asks about pricing or plans.
 - If asked to generate a calendar, remind the user to use the Calendar page for the full interactive experience`;
 
-    // 3. ابني الـ chat history للـ Gemini
     const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite", systemInstruction: systemPrompt });
 
-    // حول الـ history format من frontend لـ Gemini format
-    // const geminiHistory = (history || []).map((msg) => ({
-    //   role: msg.role === "user" ? "user" : "model",
-    //   parts: [{ text: msg.content }],
-    // }));
-    
-    // // ابدأ الـ chat مع الـ system prompt
-    // const chat = model.startChat({
-    //   history: [
-    //     { role: "user", parts: [{ text: systemPrompt }] },
-    //     {
-    //       role: "model",
-    //       parts: [
-    //         { text: "Understood! I'm ready to help as ContentForge AI." },
-    //       ],
-    //     },
-    //     ...geminiHistory,
-    //   ],
-    // });
-
-     // 5. Load history from DB (NOT frontend)
-    // ─────────────────────────────
     const dbHistory = await ChatMessage.find({
       brand: brandId,
       conversationId,
@@ -144,19 +133,15 @@ RULES:
       role: msg.sender === "user" ? "user" : "model",
       parts: [{ text: msg.content }],
     }));
-    // 6. Start chat
-    // ─────────────────────────────
+
     const chat = model.startChat({
       history: geminiHistory,
     });
 
-    // 4. ابعت الرسالة
     const result = await chat.sendMessage(message);
     const reply = result.response.text();
 
-    // ─────────────────────────────
-    // 8. حفظ رد AI في DB
-    // ─────────────────────────────
+
     await ChatMessage.create({
       brand: brandId,
       conversationId,
@@ -164,9 +149,6 @@ RULES:
       content: reply,
     });
 
-    // ─────────────────────────────
-    // 9. return response
-    // ─────────────────────────────
     res.json({ reply });
   } catch (err) {
     console.error("[Chat] Error:", err.message);

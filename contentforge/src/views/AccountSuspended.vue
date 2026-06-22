@@ -55,37 +55,6 @@
           </router-link>
         </template>
 
-        <!-- PLAN EXPIRED -->
-        <!-- <template v-else-if="reason === 'plan_expired'">
-          <div
-            class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-            :class="isDark ? 'bg-amber-500/15 text-amber-400' : 'bg-amber-50 text-amber-600'"
-          >
-            <i class="ti ti-calendar-off"></i>
-          </div>
-          <div>
-            <h1
-              class="font-display text-2xl font-bold mb-2"
-              :class="isDark ? 'text-white' : 'text-slate-900'"
-            >
-              {{ t('suspended.expired.title') }}
-            </h1>
-            <p
-              class="text-sm leading-relaxed"
-              :class="isDark ? 'text-slate-400' : 'text-slate-500'"
-            >
-              {{ t('suspended.expired.subtitle') }}
-            </p>
-          </div>
-          <router-link
-            to="/PaymentPage"
-            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-85 bg-blue-600 hover:bg-blue-500"
-          >
-            <i class="ti ti-sparkles"></i>
-            {{ t('suspended.expired.cta') }}
-          </router-link>
-        </template> -->
-
       </div>
 
       <!-- Logout -->

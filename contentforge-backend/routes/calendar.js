@@ -15,7 +15,6 @@ const {
 } = require("../services/geminiService");
 const { retrieveRelevantChunks } = require("../services/embeddingService");
 
-// POST /api/calendar/generate
 router.post(
   "/generate",
   protect,
@@ -35,16 +34,13 @@ router.post(
     const brand = await Brand.findById(brandId);
     if (!brand) return res.status(404).json({ message: "Brand not found" });
 
-    // 1. Retrieve relevant RAG chunks
     const chunks = await retrieveRelevantChunks(brandId, brief);
 
-    // 1b. Fetch top posts
     const { TopPost } = require("../models");
     const topPosts = await TopPost.find({ brand: brandId })
       .sort("-stats.engagementRate")
       .limit(5);
 
-    // 2. Live trends
     const trendDocs = await Trend.find({
       region: brand.region || "EG",
     })
@@ -59,7 +55,6 @@ router.post(
       });
     }
 
-    // 3. Call Gemini to generate posts JSON
     let postsData;
     try {
       postsData = await generateCalendar({
@@ -81,7 +76,6 @@ router.post(
       });
     }
 
-    // ✅ التحقق الثاني: بعد AI generation، نتأكد إن العدد الفعلي مش أكبر من المتبقي
     const actualPostsCount = postsData.length;
     if (actualPostsCount > req.remainingPosts) {
       return res.status(403).json({
@@ -92,7 +86,6 @@ router.post(
       });
     }
 
-    // 4. Create calendar document
     const calendar = await Calendar.create({
       brand: brandId,
       user: req.user._id,
@@ -108,16 +101,13 @@ router.post(
       status: "ready",
     });
 
-    // 5. Save each post
     const posts = await Post.insertMany(
       postsData.map((p) => ({ ...p, brand: brandId, calendar: calendar._id })),
     );
 
-    // 6. Link posts to calendar
     calendar.posts = posts.map((p) => p._id);
     await calendar.save();
 
-    // 7. ✅ تحديث الـ usage دفعة واحدة (بدلاً من loop)
     try {
       await OriginalCalendar.create({
         calendarId: calendar._id,
@@ -125,7 +115,6 @@ router.post(
         originalPostsData: posts.map((p) => p.toObject()),
       });
 
-      // ✅ تحديث الـ usage دفعة واحدة
       await User.findByIdAndUpdate(req.user._id, {
         $inc: {
           "usage.postsGenerated": actualPostsCount,
@@ -142,7 +131,6 @@ router.post(
   },
 );
 
-// GET /api/calendar/brand/:brandId — all calendars for a brand
 router.get("/brand/:brandId", protect, async (req, res) => {
   const calendars = await Calendar.find({ brand: req.params.brandId }).sort(
     "-createdAt",
@@ -150,14 +138,12 @@ router.get("/brand/:brandId", protect, async (req, res) => {
   res.json(calendars);
 });
 
-// GET /api/calendar/:id — single calendar with posts
 router.get("/:id", protect, async (req, res) => {
   const calendar = await Calendar.findById(req.params.id).populate("posts");
   if (!calendar) return res.status(404).json({ message: "Calendar not found" });
   res.json(calendar);
 });
 
-// POST /api/calendar/:id/approve — approve all posts
 router.post("/:id/approve", protect, async (req, res) => {
   const calendar = await Calendar.findById(req.params.id);
   if (!calendar) return res.status(404).json({ message: "Calendar not found" });
@@ -171,12 +157,10 @@ router.post("/:id/approve", protect, async (req, res) => {
   res.json({ message: "All posts approved" });
 });
 
-// POST /api/calendar/:id/reset
 router.post("/:id/reset", protect, async (req, res) => {
   try {
     const calendarId = req.params.id;
 
-    // Find the saved untouched snapshot
     const snapshot = await OriginalCalendar.findOne({ calendarId });
     if (!snapshot) {
       return res
@@ -184,7 +168,6 @@ router.post("/:id/reset", protect, async (req, res) => {
         .json({ message: "Original snapshot not found for this calendar" });
     }
 
-    // 1. Revert and rewrite all actual posts using snapshot info
     for (const originalPost of snapshot.originalPostsData) {
       await Post.findByIdAndUpdate(
         originalPost._id,
@@ -203,7 +186,6 @@ router.post("/:id/reset", protect, async (req, res) => {
       );
     }
 
-    // 2. Restore array positioning or any core metadata traits in the real Calendar document
     const updatedCalendar = await Calendar.findByIdAndUpdate(
       calendarId,
       {

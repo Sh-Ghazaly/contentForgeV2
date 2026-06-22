@@ -24,15 +24,13 @@ const {
   sendScheduledPostTomorrowEmail,
 } = require("./services/emailService");
 
-// ── Passport setup ────────────────────────────────────────────────────────────
 require("./config/passport");
 app.use(passport.initialize());
 
-// ── Connect to MongoDB Atlas ────────────────────────────────────────────────
 mongoose
   .connect(process.env.MONGODB_URI)
   .then((conn) => {
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`  MongoDB Connected: ${conn.connection.host}`);
     startTrendScheduler();
   })
   .catch((error) => {
@@ -41,13 +39,6 @@ mongoose
     process.exit(1);
   });
 
-// ── Middleware ────────────────────────────────────────────────────────────────
-// app.use(
-//   cors({
-//     origin: process.env.CLIENT_URL || "http://localhost:5173",
-//     credentials: true,
-//   }),
-// );
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'https://content-forge-v2-frontend.vercel.app',
@@ -57,13 +48,10 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // allow requests with no origin (mobile apps, curl, Postman)
       if (!origin) return callback(null, true)
       
-      // allow exact matches
       if (allowedOrigins.includes(origin)) return callback(null, true)
       
-      // allow ANY Vercel preview URL for this project
       if (/https:\/\/content-forge-v2-frontend-.*\.vercel\.app$/.test(origin)) {
         return callback(null, true)
       }
@@ -74,16 +62,13 @@ app.use(
   }),
 );
 
-// Stripe webhook needs raw body — MUST be before express.json
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files publicly
 app.use("/uploads", express.static("uploads"));
 
-// ── API Routes ────────────────────────────────────────────────────────────────
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/brand", require("./routes/brand"));
 app.use("/api/calendar", require("./routes/calendar"));
@@ -104,7 +89,6 @@ app.use(
 );
 app.use("/api/subscription", require("./routes/subscription"));
 
-// ── Health check ───────────────────────────────────────────────────────────────
 app.get("/api/health", (req, res) => {
   res.json({
     status: "OK",
@@ -114,7 +98,6 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// ── Cron secret middleware ────────────────────────────────────────────────────
 const cronAuth = (req, res, next) => {
   const secret = req.headers["x-cron-secret"];
   if (!secret || secret !== process.env.CRON_SECRET) {
@@ -123,7 +106,6 @@ const cronAuth = (req, res, next) => {
   next();
 };
 
-// ── Cron endpoint: Check trial expiry warnings (run daily at midnight) ────────
 app.get("/api/cron/check-expiry", cronAuth, async (req, res) => {
   try {
     console.log("⏰ جاري تشغيل فحص انتهاء فترات التجربة للمستخدمين...");
@@ -135,7 +117,6 @@ app.get("/api/cron/check-expiry", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Send expiry warning emails (run daily at 9 AM) ─────────────
 app.get("/api/cron/expiry-emails", cronAuth, async (req, res) => {
   try {
     const settings = await PlatformSettings.findOne();
@@ -167,7 +148,6 @@ app.get("/api/cron/expiry-emails", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Scheduled post reminders (run daily at 8 AM) ───────────────
 app.get("/api/cron/post-reminders", cronAuth, async (req, res) => {
   try {
     const { Post } = require("./models");
@@ -242,7 +222,6 @@ app.get("/api/cron/post-reminders", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Auto-block users (run every 5 minutes) ────────────────────
 app.get("/api/cron/auto-block", cronAuth, async (req, res) => {
   try {
     const now = new Date();
@@ -288,7 +267,6 @@ app.get("/api/cron/auto-block", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Clean unverified expired users (run hourly) ────────────────
 app.get("/api/cron/clean-unverified", cronAuth, async (req, res) => {
   try {
     const result = await User.deleteMany({
@@ -303,7 +281,6 @@ app.get("/api/cron/clean-unverified", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Reset monthly usage (run 1st of every month at midnight) ───
 app.get("/api/cron/reset-monthly-usage", cronAuth, async (req, res) => {
   try {
     console.log("🔄 جاري تصفير عدادات الاستخدام الشهرية...");
@@ -315,7 +292,6 @@ app.get("/api/cron/reset-monthly-usage", cronAuth, async (req, res) => {
   }
 });
 
-// ── Cron endpoint: Downgrade expired subscriptions (run hourly) ───────────────
 app.get("/api/cron/check-subscriptions", cronAuth, async (req, res) => {
   try {
     const now = new Date();
@@ -355,12 +331,10 @@ app.get("/api/cron/check-subscriptions", cronAuth, async (req, res) => {
   }
 });
 
-// ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({ message: `Route ${req.originalUrl} not found` });
 });
 
-// ── Global error handler ──────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error("❌ Server Error:", err.message);
   res.status(err.status || 500).json({
@@ -368,5 +342,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── Export for Vercel (no app.listen) ────────────────────────────────────────
 module.exports = app;

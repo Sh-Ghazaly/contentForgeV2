@@ -41,7 +41,7 @@
       "title": "Request Account Deletion",
       "desc": "Your data will be permanently deleted within 48 hours. This action cannot be undone.",
       "reasonPlaceholder": "Tell us why (optional)...",
-      "success": "✅ Request sent. We'll contact you within 48 hours.",
+      "success": "  Request sent. We'll contact you within 48 hours.",
       "sending": "Sending...",
       "confirm": "Confirm",
       "error": "Something went wrong, please try again."
@@ -1524,5 +1524,10 @@
     "cta": "Renew Subscription"
   },
   "logout": "Log out"
-}
+},
+   "notFound": {
+    "title": "Oops! Page not found",
+    "message": "The page you are looking for doesn't exist or has been moved.",
+    "backHome": "Back to Home"
+  }
 }

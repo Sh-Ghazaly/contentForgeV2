@@ -93,7 +93,6 @@
             <h1 class="text-2xl sm:text-3xl font-bold theme-text">{{ t('payment.successTitle') }}</h1>
             <p class="text-sm sm:text-base theme-muted leading-relaxed max-w-sm mx-auto">{{ t('payment.successMsg') }}</p>
             
-            <!-- ✅ عرض الخطة الجديدة -->
             <div v-if="newPlan" class="mt-4 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
               <p class="text-xs text-blue-400 font-medium uppercase tracking-wider mb-1">
                 {{ t('payment.yourNewPlan') || 'Your New Plan' }}
@@ -147,7 +146,6 @@ const goBack = () => {
   router.push('/dashboard')
 }
 
-// ✅ دالة تأكيد الدفع
 async function confirmPayment() {
   const sessionId = route.query.session_id
   
@@ -161,14 +159,12 @@ async function confirmPayment() {
   error.value = ''
 
   try {
-    // 1️⃣ استدعاء paymentApi.confirmPayment لتحديث الـ Plan في الـ Backend
     const result = await paymentApi.confirmPayment(sessionId)
     
     if (result.success) {
       newPlan.value = result.plan
     }
 
-    // 2️⃣ تحديث بيانات المستخدم في الـ Auth Store باستخدام authApi.getProfile()
     const freshUser = await authApi.getProfile()
     authStore.user = freshUser
     localStorage.setItem('cf_user', JSON.stringify(freshUser))
@@ -185,7 +181,6 @@ function retryConfirm() {
   confirmPayment()
 }
 
-// ── Refresh User Profile Data ──
 onMounted(() => {
   confirmPayment()
 })

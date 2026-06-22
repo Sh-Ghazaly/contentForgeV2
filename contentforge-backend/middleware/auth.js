@@ -21,50 +21,44 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'User not found' })
     }
 
-    // 1. التحقق من الحظر (isBlocked)
     if (req.user.isBlocked) {
       return res.status(403).json({ 
         success: false, 
-        // message: 'تم حظر حسابك، يرجى التواصل مع الدعم الفني.' 
       });
     }
+    const isPaymentRoute = req.originalUrl.includes('/payment');
 
-    // ✅ ALLOW payment routes even if trial/subscription expired
-    const isPaymentRoute = req.path.startsWith('/payment');
-     
-    // ----------------------------------------------------
-    // الحتة السحرية الجديدة هنا:
-    // بنشيك لو الحساب لسه في فترة التجربة (isTrial) والتاريخ الحالي أحدث من تاريخ الانتهاء
+    const isExemptRoute = isPaymentRoute || req.originalUrl.includes('/auth/me');
+
     if (
       req.user &&
       !req.user.isAdmin &&
       req.user.plan === "free" &&
       req.user.isTrial &&
       Date.now() > new Date(req.user.planEndsAt) &&
-      !isPaymentRoute
+      !isExemptRoute
     ) {
       return res.status(403).json({
         success: false,
         message:
           "Your 14-day free trial has expired. Please subscribe to continue.",
-        reason: "trial_expired", // ← أضف ده
-        upgradeUrl: "/trial-expired", // ← أضف ده
+        reason: "trial_expired", 
+        upgradeUrl: "/trial-expired", 
       });
     }
     if (
       !req.user.isAdmin && 
       req.user.planEndsAt && 
       new Date() > new Date(req.user.planEndsAt)&&
-      !isPaymentRoute
+      !isExemptRoute
     ) {
       return res.status(403).json({
         success: false,
         message: "Your subscription has expired. Please renew your plan to continue.",
         reason: "subscription_expired", 
-        upgradeUrl: "/billing" // توجيه لصفحة الدفع أو تجديد الباقة
+        upgradeUrl: "/billing" 
       });
     }
-    // ----------------------------------------------------
 
     next()
   } catch (err) {
@@ -72,4 +66,4 @@ const protect = async (req, res, next) => {
   }
 }
 
-module.exports = protect // متنساش تعملها export لو مش معمولة
+module.exports = protect

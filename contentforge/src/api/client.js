@@ -8,7 +8,6 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
-// ✅ أضف هذا: REQUEST interceptor
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("cf_token");
@@ -21,7 +20,6 @@ api.interceptors.request.use(
     return Promise.reject(error);
   },
 );
-// RESPONSE interceptor (الكود الموجود لديك)
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -34,7 +32,6 @@ api.interceptors.response.use(
     if (status === 401) {
       localStorage.removeItem("cf_token");
       localStorage.removeItem("cf_user");
-      // ✅ استثناء صفحات مش محتاجة token
       const exemptPaths = ["/login", "/trial-expired", "/account-suspended"];
       if (!exemptPaths.includes(window.location.pathname)) {
         window.location.href = "/login";
@@ -50,22 +47,20 @@ api.interceptors.response.use(
         window.location.href = "/account-suspended?reason=blocked";
         return Promise.reject({ status, message, reason });
       }
-      // ✅ حالة 1: Trial Expired → توجيه إجباري (مش modal!)
-      // لأن المستخدم لم يعد قادراً على استخدام الموقع أصلاً
+
       if (reason === "trial_expired") {
         if (currentPath !== "/trial-expired" && currentPath !== "/payment") {
           window.location.href = "/trial-expired";
         }
         return Promise.reject({ status, message, reason });
       }
-      ///////////////////////////////////////////////////////هنا/*/**/
+  
       if (reason === "subscription_expired") {
-      if (currentPath !== "/trial-expired" && currentPath !== "/payment") {
-        window.location.href = "/trial-expired";
+        if (currentPath !== "/trial-expired" && currentPath !== "/payment") {
+          window.location.href = "/trial-expired";
+        }
+        return Promise.reject({ status, message, reason });
       }
-      return Promise.reject({ status, message, reason });
-    }
-      // ✅ باقي الحالات → Modal (المستخدم لسه يقدر يستخدم الموقع)
       const modalTypeMap = {
         feature_locked: { type: "feature_locked", title: "Feature Locked" },
         posts_limit_exceeded: {

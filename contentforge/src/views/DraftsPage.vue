@@ -136,7 +136,6 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-// filters use value (for logic) + labelKey (for display)
 const activeFilter = ref('All')
 const filters = [
   { value: 'All',      labelKey: 'drafts.filterAll' },
@@ -148,7 +147,6 @@ const filters = [
 const selected     = ref([])
 const editingDraft = ref(null)
 
-// platform & status select options for the edit modal
 const platformOptions = [
   { value: 'Instagram',  labelKey: 'drafts.platform.Instagram' },
   { value: 'Facebook',   labelKey: 'drafts.platform.Facebook' },
@@ -161,7 +159,6 @@ const statusOptions = [
   { value: 'Approved', labelKey: 'drafts.statusApproved' },
 ]
 
-// dialectKey maps raw dialect string to a safe i18n key
 function toDialectKey(dialect) {
   return {
     'Arabic (EGY)':    'egy',
@@ -181,7 +178,6 @@ const drafts = ref([
   { id:6, platform:'Instagram', dialect:'Levantine',    dialectKey:'levantine', status:'Draft',   date:'May 25', copy:'ترند الأسبوع — قهوة الصبح بتكون أحلى مع عربي ☀️', arabic:'ترند الأسبوع — قهوة الصبح بتكون أحلى مع عربي ☀️', hashtags:['ترند','قهوة_الصباح','لبنان'], variantB:null },
 ])
 
-// ── Load drafts from DB on mount ──────────────────────────────────────────────
 onMounted(async () => {
   try {
     const brandId = localStorage.getItem('cf_brandId')
@@ -203,16 +199,13 @@ onMounted(async () => {
       }
     })
   } catch {
-    // API not running — keeps static data
   }
 })
 
-// ── Computed ──────────────────────────────────────────────────────────────────
 const filteredDrafts = computed(() =>
   activeFilter.value === 'All' ? drafts.value : drafts.value.filter(d => d.status === activeFilter.value)
 )
 
-// ── Actions ───────────────────────────────────────────────────────────────────
 function toggleSelect(id) {
   const i = selected.value.indexOf(id)
   if (i === -1) selected.value.push(id)
@@ -263,7 +256,6 @@ async function deleteDraft(id) {
   await postsApi.deletePost(id).catch(() => {})
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function platformClass(p) {
   return { Instagram:'bg-pink-500/15 text-pink-400', Facebook:'bg-blue-500/15 text-blue-400', LinkedIn:'bg-blue-700/15 text-blue-300', 'Twitter/X':'bg-sky-500/15 text-sky-400' }[p] || 'bg-slate-500/15 text-slate-400'
 }

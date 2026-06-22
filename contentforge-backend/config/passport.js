@@ -5,7 +5,6 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { User, PlatformSettings } = require("../models");
 
-// ── Google Strategy ──────────────────────────────────────────────────────────
 passport.use(
   new GoogleStrategy(
     {
@@ -40,7 +39,6 @@ passport.use(
         const settings = (await PlatformSettings.findOne()) || {};
         const trialDays = settings.trialDays ?? 14;
 
-        // ✅ إنشاء المستخدم مع كل الحقول المطلوبة
         user = await User.create({
           name,
           email,
@@ -53,7 +51,6 @@ passport.use(
           isTrial: true,
           hasUsedTrial: true,
           password: Math.random().toString(36).slice(-16),
-          // ✅ أضف planLimits
           planLimits: {
             maxAiImagesPerMonth: 3,
             maxPostsPerCalendar: 5,
@@ -64,7 +61,6 @@ passport.use(
             automatedReels: false,
             prioritySupport: false,
           },
-          // ✅ أضف usage
           usage: {
             aiImagesGenerated: 0,
             postsGenerated: 0,

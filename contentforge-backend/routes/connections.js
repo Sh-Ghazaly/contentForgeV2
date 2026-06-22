@@ -6,7 +6,6 @@ const axios = require("axios");
 
 const API_VERSION = process.env.META_API_VERSION || "v25.0";
 
-// ── Helper: Exchange short-lived → long-lived user token ─────────
 async function exchangeForLongLivedToken(shortLivedToken) {
   const { data } = await axios.get(
     `https://graph.facebook.com/${API_VERSION}/oauth/access_token`,
@@ -19,10 +18,9 @@ async function exchangeForLongLivedToken(shortLivedToken) {
       },
     },
   );
-  return data.access_token; // 60-day token
+  return data.access_token;
 }
 
-// ── Helper: Get never-expiring page token ────────────────────────
 async function getPageToken(pageId, longLivedUserToken) {
   const { data } = await axios.get(
     `https://graph.facebook.com/${API_VERSION}/${pageId}`,
@@ -36,7 +34,6 @@ async function getPageToken(pageId, longLivedUserToken) {
   return data.access_token;
 }
 
-// GET /api/connections — get all connections for logged-in user
 router.get("/", protect, async (req, res) => {
   try {
     const connections = await Connection.find({ user: req.user._id });
@@ -47,7 +44,6 @@ router.get("/", protect, async (req, res) => {
   }
 });
 
-// GET /api/connections/meta/auth — generate OAuth URL
 router.get("/meta/auth", protect, (req, res) => {
   const scopes = [
     "public_profile",
@@ -75,12 +71,10 @@ router.get("/meta/auth", protect, (req, res) => {
   res.json({ authUrl });
 });
 
-// GET /api/connections/meta/callback — Meta redirects here
 router.get("/meta/callback", async (req, res) => {
   const { code, state: userId } = req.query;
 
   try {
-    // 1. Exchange code for short-lived user token
     const tokenRes = await axios.get(
       `https://graph.facebook.com/${API_VERSION}/oauth/access_token`,
       {
@@ -96,10 +90,8 @@ router.get("/meta/callback", async (req, res) => {
     const shortLivedToken = tokenRes.data.access_token;
     if (!shortLivedToken) throw new Error("No access token from Meta");
 
-    // 2. Exchange for LONG-LIVED user token (60 days)
     const longLivedUserToken = await exchangeForLongLivedToken(shortLivedToken);
 
-    // 3. Get user pages
     const pagesRes = await axios.get(
       `https://graph.facebook.com/${API_VERSION}/me/accounts`,
       {
@@ -112,7 +104,6 @@ router.get("/meta/callback", async (req, res) => {
     console.log("[Meta Callback] Pages found:", JSON.stringify(pagesRes.data));
 
     let pages = pagesRes.data.data || [];
-    // If empty, try fetching via businesses
     if (pages.length === 0) {
       const businessRes = await axios.get(
         `https://graph.facebook.com/${API_VERSION}/me/businesses`,
@@ -145,10 +136,8 @@ router.get("/meta/callback", async (req, res) => {
     const connections = [];
 
     for (const page of pages) {
-      // 4. Get NEVER-EXPIRING page token
       const pageToken = await getPageToken(page.id, longLivedUserToken);
 
-      // 5. Get Instagram Business Account linked to this page
       const igRes = await axios.get(
         `https://graph.facebook.com/${API_VERSION}/${page.id}`,
         {
@@ -160,7 +149,6 @@ router.get("/meta/callback", async (req, res) => {
         },
       );
 
-      // Facebook connection
       connections.push({
         platform: "Facebook",
         handle: page.name,
@@ -178,7 +166,6 @@ router.get("/meta/callback", async (req, res) => {
         rawData: { pageId: page.id, pageToken },
       });
 
-      // Instagram connection (if linked)
       if (igRes.data.instagram_business_account) {
         const ig = igRes.data.instagram_business_account;
         connections.push({
@@ -205,7 +192,6 @@ router.get("/meta/callback", async (req, res) => {
       }
     }
 
-    // 6. Save to database (upsert — replace old connections)
     for (const conn of connections) {
       await Connection.findOneAndUpdate(
         { user: userId, platform: conn.platform },
@@ -226,7 +212,6 @@ router.get("/meta/callback", async (req, res) => {
   }
 });
 
-// DELETE /api/connections/:platform — disconnect
 router.delete("/:platform", protect, async (req, res) => {
   try {
     await Connection.deleteOne({
@@ -239,7 +224,6 @@ router.delete("/:platform", protect, async (req, res) => {
     res.status(500).json({ message: "Failed to disconnect" });
   }
 });
-// POST /api/connections/facebook/post
 router.post("/facebook/post", protect, async (req, res) => {
   const { message } = req.body;
 
@@ -257,7 +241,6 @@ router.post("/facebook/post", protect, async (req, res) => {
   res.json({ success: true, postId: result.data.id });
 });
 
-// POST /api/connections/instagram/post
 router.post("/instagram/post", protect, async (req, res) => {
   const { imageUrl, caption } = req.body;
 
@@ -268,17 +251,15 @@ router.post("/instagram/post", protect, async (req, res) => {
   if (!conn)
     return res.status(404).json({ message: "Instagram not connected" });
 
-  // Step 1: Create media container
   const containerRes = await axios.post(
     `https://graph.facebook.com/${API_VERSION}/${conn.igId}/media`,
     {
-      image_url: imageUrl, // must be a public URL
+      image_url: imageUrl, 
       caption,
       access_token: conn.accessToken,
     },
   );
 
-  // Step 2: Publish it
   const publishRes = await axios.post(
     `https://graph.facebook.com/${API_VERSION}/${conn.igId}/media_publish`,
     {
@@ -291,28 +272,3 @@ router.post("/instagram/post", protect, async (req, res) => {
 });
 
 module.exports = router;
-
-// Table
-// Permission	Status	Purpose
-// instagram_basic	✅ -->	Read Instagram Business profile & media
-// instagram_manage_insights	✅ -->	Read Instagram reach, impressions, likes, comments
-// instagram_content_publish	✅ -->	Publish posts to Instagram
-// instagram_manage_comments	✅ -->	Read/reply to Instagram comments
-// instagram_manage_messages	✅ -->	Read Instagram DMs
-// instagram_manage_comments	✅ -->	Manage Instagram comments
-// instagram_content_publish	✅ -->	Publish to Instagram (legacy)
-// pages_show_list	✅ -->	List user's Facebook Pages
-// pages_read_engagement	✅ -->	Read Page posts, followers, engagement
-// pages_manage_posts	✅ -->	Publish posts to Facebook Page
-// pages_manage_metadata	✅ -->	Manage Page info/settings
-// read_insights	✅ -->	Read Page analytics
-// email	✅ -->	Get user's email
-// public_profile	✅ -->	Basic Facebook profile info
-
-// test manually
-// # 1. Get auth URL (replace TOKEN with your JWT)
-// curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-//   https://content-forge-v2.vercel.app/api/connections/meta/auth
-
-// # 2. Test callback manually (after getting code from browser)
-// curl "https://content-forge-v2.vercel.app/api/connections/meta/callback?code=XXX&state=USER_ID"

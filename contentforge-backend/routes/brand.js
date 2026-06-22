@@ -2,23 +2,20 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-// const path = require("path");
 const protect = require("../middleware/auth");
 const { Brand, User } = require("../models");
 const { embedBrandVault } = require("../services/embeddingService");
 const { createNotification } = require("../services/notificationHelper");
 
-// Multer config — save uploads to /uploads folder
-// NEW
 const cloudinary = require("cloudinary").v2;
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-// const cloudinary = require("../config/cloudinary"); // adjust path if needed
+
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 20 * 1024 * 1024 } });
-// POST /api/brand — create or update brand profile
+
 router.post("/", protect, async (req, res) => {
   try {
     const existing = await Brand.findOne({ user: req.user._id });
@@ -37,14 +34,11 @@ router.post("/", protect, async (req, res) => {
 
     let brand;
     if (existing) {
-      brand = await Brand.findByIdAndUpdate(existing._id, brandData, {
-        new: true,
-      });
+      brand = await Brand.findByIdAndUpdate(existing._id, brandData, { new: true });
     } else {
       brand = await Brand.create(brandData);
     }
 
-    // Notify admins about new/updated brand (BEFORE sending response)
     try {
       const admins = await User.find({ isAdmin: true });
       for (const admin of admins) {
@@ -53,7 +47,7 @@ router.post("/", protect, async (req, res) => {
           recipientRole: "admin",
           type: "new_brand",
           title: existing ? "Brand Updated" : "New Brand Created",
-          message: `${req.user.name} ${existing ? 'updated' : 'created'} a brand: "${brand.name}"`,
+          message: `${req.user.name} ${existing ? "updated" : "created"} a brand: "${brand.name}"`,
           meta: { brandId: brand._id, brandName: brand.name, userId: req.user._id },
         });
       }
@@ -68,21 +62,17 @@ router.post("/", protect, async (req, res) => {
   }
 });
 
-// GET /api/brand — get all brands for user
 router.get("/", protect, async (req, res) => {
   const brands = await Brand.find({ user: req.user._id });
   res.json(brands);
 });
 
-// GET /api/brand/:id
 router.get("/:id", protect, async (req, res) => {
   const brand = await Brand.findById(req.params.id);
   if (!brand) return res.status(404).json({ message: "Brand not found" });
   res.json(brand);
 });
 
-// POST /api/brand/:id/upload-guidelines — upload PDF
-// NEW
 router.post(
   "/:id/upload-guidelines",
   protect,
@@ -94,7 +84,7 @@ router.post(
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            resource_type: "raw", // required for PDFs
+            resource_type: "raw",
             folder: "brand-guidelines",
             public_id: `${Date.now()}-${req.file.originalname}`,
           },
@@ -118,8 +108,6 @@ router.post(
   },
 );
 
-// POST /api/brand/:id/upload-posts — upload past post images
-// NEW
 router.post(
   "/:id/upload-posts",
   protect,
@@ -156,7 +144,6 @@ router.post(
   },
 );
 
-// POST /api/brand/:id/embed — trigger RAG embedding
 router.post("/:id/embed", protect, async (req, res) => {
   const brand = await Brand.findById(req.params.id);
   if (!brand) return res.status(404).json({ message: "Brand not found" });
@@ -174,13 +161,11 @@ router.post("/:id/embed", protect, async (req, res) => {
   res.json({ message: `Brand embedded — ${count} chunks stored in MongoDB` });
 });
 
-// DELETE /api/brand/:id
 router.delete("/:id", protect, async (req, res) => {
   await Brand.findByIdAndDelete(req.params.id);
   res.json({ message: "Brand deleted" });
 });
 
-// PUT /api/brand/:id — update brand
 router.put("/:id", protect, async (req, res) => {
   try {
     const brand = await Brand.findByIdAndUpdate(

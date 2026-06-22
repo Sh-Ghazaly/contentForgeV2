@@ -1,7 +1,6 @@
 // backend/services/embeddingService.js
 const { Brand } = require("../models");
 
-// ── Lazy-load the pipeline (dynamic import because @xenova/transformers is ESM) ─
 let _pipeline = null;
 
 async function getPipeline() {
@@ -12,7 +11,6 @@ async function getPipeline() {
   return _pipeline;
 }
 
-// ── Split text into ~300-word chunks ─────────────────────────────────────────
 function chunkText(text, maxWords = 300) {
   const words = text.split(/\s+/).filter(Boolean);
   const chunks = [];
@@ -22,7 +20,6 @@ function chunkText(text, maxWords = 300) {
   return chunks;
 }
 
-// ── Embed a single string ─────────────────────────────────────────────────────
 async function embedText(text) {
   if (!text || text.trim() === "") return [];
   try {
@@ -35,7 +32,6 @@ async function embedText(text) {
   }
 }
 
-// ── Embed brand vault and save to MongoDB ─────────────────────────────────────
 async function embedBrandVault(brandId, guidelinesText, pastPostsText) {
   const chunks = [];
   for (const chunk of chunkText(guidelinesText)) {
@@ -50,7 +46,6 @@ async function embedBrandVault(brandId, guidelinesText, pastPostsText) {
   return chunks.length;
 }
 
-// ── Cosine similarity ──────────────────────────────────────────────────────────
 function cosineSimilarity(a, b) {
   const dot = a.reduce((sum, ai, i) => sum + ai * b[i], 0);
   const magA = Math.sqrt(a.reduce((s, ai) => s + ai * ai, 0));
@@ -58,7 +53,6 @@ function cosineSimilarity(a, b) {
   return dot / (magA * magB);
 }
 
-// ── Retrieve top-K most relevant chunks for a query ───────────────────────────
 async function retrieveRelevantChunks(brandId, query, topK = 4) {
   const brand = await Brand.findById(brandId);
   if (!brand?.ragChunks?.length) return [];

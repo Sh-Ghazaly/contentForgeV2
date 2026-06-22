@@ -306,16 +306,14 @@ const isLoggedIn = ref(false);
 const checkoutLoading = ref(null);
 const errorMsg = ref("");
 
-// ✅ حالة خطة المستخدم الحالية
-const userPlan = ref(null); // "free" | "pro" | "enterprise"
-const userBilling = ref(null); // "monthly" | "yearly" | null
-const userStatus = ref(null); // "active" | "trialing" | "past_due" | ...
+const userPlan = ref(null); 
+const userBilling = ref(null); 
+const userStatus = ref(null);
 
 onMounted(async () => {
   const token = localStorage.getItem("cf_token");
   isLoggedIn.value = !!token;
 
-  // ✅ لو المستخدم مسجل دخول، جيب خطته الحالية
   if (token) {
     try {
       const status = await paymentApi.getStatus();
@@ -332,43 +330,34 @@ onMounted(async () => {
   }
 });
 
-// ✅ دالة تحدد هل دي نفس الخطة ونفس نوع الاشتراك بالظبط
 const isExactCurrentPlan = (planKey) => {
   if (!isLoggedIn.value) return false
   if (!userPlan.value) return false
   
-  // نفس اسم الخطة
   if (userPlan.value !== planKey) return false
   
-  // لو الخطة free، دايماً current
   if (planKey === "free") return true
   
-  // نفس نوع الاشتراك (annual vs monthly)
   const selectedBilling = annual.value ? "yearly" : "monthly"
   return userBilling.value === selectedBilling
 }
 
-// ✅ دالة تحدد هل الزرار لازم يبقى disabled
 const isButtonDisabled = (planKey) => {
   if (checkoutLoading.value === planKey) return true
   return isExactCurrentPlan(planKey)
 }
 
-// ✅ نص الزرار بناءً على الحالة
 const getButtonText = (planKey) => {
   if (checkoutLoading.value === planKey) return ""
   
-  // لو نفس الخطة ونفس نوع الاشتراك
   if (isExactCurrentPlan(planKey)) {
     return t('pricing.currentPlan', 'Current Plan')
   }
   
-  // ✅ لو المستخدم مسجل دخول وعلى خطة مدفوعة وبيشوف زرار Free
   if (isLoggedIn.value && planKey === "free" && userPlan.value && userPlan.value !== "free") {
     return t('pricing.unavailable', 'Unavailable')
   }
   
-  // لو نفس الخطة بس نوع اشتراك مختلف
   if (isLoggedIn.value && userPlan.value === planKey && planKey !== "free") {
     return annual.value 
       ? t('pricing.switchToAnnual', 'Switch to Annual') 
@@ -378,7 +367,6 @@ const getButtonText = (planKey) => {
   return t('pricing.tryNow', 'Try Now')
 }
 
-// ✅ هل زرار الـ Free يجب أن يكون disabled (current plan أو unavailable)
 const isFreeButtonDisabled = computed(() => {
   if (!isLoggedIn.value) return false
   if (isExactCurrentPlan("free")) return true

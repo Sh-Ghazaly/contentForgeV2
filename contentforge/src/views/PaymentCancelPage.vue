@@ -82,20 +82,16 @@ const { switchLang } = useLang()
 const { isDark, toggle: toggleTheme } = useTheme()
 
 const goBack = () => {
-  // ✅ Clean up any leftover checkout data
   sessionStorage.removeItem('beforeCheckout');
 
-  // ✅ Get user data
   const userStr = localStorage.getItem('cf_user');
   const user = userStr ? JSON.parse(userStr) : {};
 
-  // 1. If trial is expired, send to trial-expired page
   if (user?.trialExpired) {
     router.push('/trial-expired');
     return;
   }
 
-  // 2. Otherwise, send straight to dashboard
   router.push('/dashboard');
 };
 </script>

@@ -1152,7 +1152,6 @@ const { t, locale } = useI18n();
 const toasts = ref([]);
 const authStore = useAuthStore();
 
-// Check if user is on Free plan
 const isFreePlan = computed(() => {
   const plan = authStore.user?.plan || "free";
   return plan === "free" || plan === "";
@@ -1206,15 +1205,10 @@ const brand = ref({
   logoPreview: null,
 });
 
-// AI Detected colors from logo
 const detectedColors = ref([]);
 const extractingColors = ref(false);
 
-/**
- * Extract dominant colors from an image using canvas
- * Pure JavaScript - no external libraries needed
- * Uses color quantization and frequency analysis
- */
+
 function extractColorsFromImage(imageSrc) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -1225,7 +1219,6 @@ function extractColorsFromImage(imageSrc) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Resize to max 150px for performance while keeping aspect ratio
         const maxSize = 150;
         let width = img.naturalWidth;
         let height = img.naturalHeight;
@@ -1250,7 +1243,6 @@ function extractColorsFromImage(imageSrc) {
         const data = imageData.data;
         const colorMap = new Map();
 
-        // Sample every 4th pixel for performance (step = 4)
         const step = 4;
 
         for (let i = 0; i < data.length; i += step * 4) {
@@ -1259,25 +1251,20 @@ function extractColorsFromImage(imageSrc) {
           const b = data[i + 2];
           const a = data[i + 3];
 
-          // Skip transparent pixels
           if (a < 128) continue;
 
-          // Skip near-white and near-black (background colors)
           const brightness = (r + g + b) / 3;
           if (brightness > 245 || brightness < 15) continue;
 
-          // Skip low saturation colors (grays)
           const max = Math.max(r, g, b);
           const min = Math.min(r, g, b);
           const saturation = max === 0 ? 0 : (max - min) / max;
           if (saturation < 0.15) continue;
 
-          // Quantize colors to reduce similar colors (round to nearest 24)
           const qr = Math.round(r / 24) * 24;
           const qg = Math.round(g / 24) * 24;
           const qb = Math.round(b / 24) * 24;
 
-          // Clamp to valid RGB range
           const cr = Math.min(255, Math.max(0, qr));
           const cg = Math.min(255, Math.max(0, qg));
           const cb = Math.min(255, Math.max(0, qb));
@@ -1287,7 +1274,6 @@ function extractColorsFromImage(imageSrc) {
           colorMap.set(hex, (colorMap.get(hex) || 0) + 1);
         }
 
-        // Sort by frequency and get top 6 colors
         const sortedColors = Array.from(colorMap.entries())
           .sort((a, b) => b[1] - a[1])
           .slice(0, 6)
@@ -1317,14 +1303,12 @@ async function handleLogo(e) {
   reader.onload = async (ev) => {
     brand.value.logoPreview = ev.target.result;
 
-    // Extract colors from logo automatically
     try {
       extractingColors.value = true;
       const colors = await extractColorsFromImage(ev.target.result);
       detectedColors.value = colors;
 
       if (colors.length > 0) {
-        // Auto-add first 2 colors if brand colors are empty
         if (brand.value.colors.length === 0) {
           colors.slice(0, 2).forEach(c => {
             if (!brand.value.colors.includes(c)) {
@@ -1338,7 +1322,6 @@ async function handleLogo(e) {
       }
     } catch (err) {
       console.error("Color extraction failed:", err);
-      // Silently fail - colors are optional
     } finally {
       extractingColors.value = false;
     }
@@ -1468,7 +1451,6 @@ async function loadTopPosts() {
   try {
     topPosts.value = await topPostsApi.getAll(currentBrandId.value);
   } catch {
-    /* silent */
   } finally {
     tpLoading.value = false;
   }

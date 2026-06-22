@@ -12,10 +12,10 @@ export default {
   update: (id, data) => api.put(`/top-posts/${id}`, data),
   remove: (id) => api.delete(`/top-posts/${id}`),
 
-  // 🔥 تعديل دالة الرفع للتأكيد على إرسال الـ boundary والـ Content-Type الصحيح للملفات
+
   fromDoc(brandId, file) {
     const form = new FormData();
-    form.append("file", file); // التأكد من مطابقة الاسم تماماً مع الباك إند
+    form.append("file", file); 
 
     return api.post(`${BASE(brandId)}/from-doc`, form, {
       headers: {

@@ -1,7 +1,6 @@
 // backend/middleware/subscription.js
 const { User } = require("../models");
 
-// ── Default limits (Free plan) ────────────────────────────────────────────────
 const DEFAULT_LIMITS = {
   maxAiImagesPerMonth: 3,
   maxPostsPerCalendar: 5,
@@ -9,7 +8,6 @@ const DEFAULT_LIMITS = {
   maxBrands: 1,
 };
 
-// ── Helper: Get effective limits (with yearly multiplier) ─────────────────────
 function getEffectiveLimits(user) {
   const limits = user.planLimits || DEFAULT_LIMITS;
   const isYearly = user.subscriptionType === "yearly";
@@ -28,7 +26,6 @@ function getEffectiveLimits(user) {
   };
 }
 
-// ── Middleware عام للتحقق من الخطة ────────────────────────────────────────────
 const checkPlan = (requiredPlans) => {
   return async (req, res, next) => {
     try {
@@ -56,7 +53,6 @@ const checkPlan = (requiredPlans) => {
   };
 };
 
-// ── Middleware للتحقق من ميزة معينة (boolean feature) ────────────────────────
 const checkFeature = (featureName) => {
   return async (req, res, next) => {
     try {
@@ -86,7 +82,6 @@ const checkFeature = (featureName) => {
   };
 };
 
-// ── Middleware للـ Poster (يمنع Free + يتحقق من حد الصور) ───────────────────
 const checkPosterLimit = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -95,7 +90,6 @@ const checkPosterLimit = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // 🔒 منع الـ Free plan تماماً
     if (user.plan === "free" || !user.plan) {
       return res.status(403).json({
         success: false,
@@ -108,7 +102,6 @@ const checkPosterLimit = async (req, res, next) => {
       });
     }
 
-    // ✅ التحقق من الـ limits (مع yearly multiplier)
     const effectiveLimits = getEffectiveLimits(user);
     const limit = effectiveLimits.maxAiImagesPerMonth;
     const usage = user.usage?.aiImagesGenerated || 0;
@@ -132,7 +125,6 @@ const checkPosterLimit = async (req, res, next) => {
   }
 };
 
-// ── Middleware للتحقق من Calendar Limit ───────────────────────────────────────
 const checkCalendarLimit = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -168,7 +160,6 @@ const checkCalendarLimit = async (req, res, next) => {
   }
 };
 
-// ── Middleware للتحقق من Posts Limit (عام) ───────────────────────────────────
 const checkPostsLimit = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -203,7 +194,6 @@ const checkPostsLimit = async (req, res, next) => {
   }
 };
 
-// ── Middleware للتحقق من Posts Limit قبل إنشاء Calendar ─────────────────────
 const checkCalendarPostsLimit = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -218,11 +208,9 @@ const checkCalendarPostsLimit = async (req, res, next) => {
 
     const { duration } = req.body;
 
-    // ✅ تقدير أكثر تحفظاً (أعلى من المتوقع)
-    // بدلاً من 0.65، استخدم 0.75 أو 0.8
+
     const estimatedPosts = duration ? Math.ceil(duration * 0.75) : 10;
 
-    // ✅ تحقق صارم: لو أي احتمال يتجاوز الحد، ارفض فوراً
     if (remainingPosts <= 0) {
       return res.status(403).json({
         success: false,
@@ -239,7 +227,6 @@ const checkCalendarPostsLimit = async (req, res, next) => {
       });
     }
 
-    // ✅ تحقق أكثر صرامة: لو التقدير >= المتبقي، ارفض
     if (estimatedPosts >= remainingPosts) {
       return res.status(403).json({
         success: false,
@@ -264,7 +251,6 @@ const checkCalendarPostsLimit = async (req, res, next) => {
   }
 };
 
-// ── Middleware للتحقق من Brands Limit ────────────────────────────────────────
 const checkBrandsLimit = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -276,7 +262,6 @@ const checkBrandsLimit = async (req, res, next) => {
     const effectiveLimits = getEffectiveLimits(user);
     const maxBrands = effectiveLimits.maxBrands;
 
-    // عد العلامات التجارية الحالية للمستخدم
     const { Brand } = require("../models");
     const brandsCount = await Brand.countDocuments({ user: user._id });
     const remainingBrands = maxBrands - brandsCount;
@@ -303,7 +288,6 @@ const checkBrandsLimit = async (req, res, next) => {
   }
 };
 
-// ── Middleware لزيادة الـ usage (مرن - يقبل عدد) ────────────────────────────
 const incrementUsage = (field = "aiImagesGenerated", amount = 1) => {
   return async (req, res, next) => {
     try {
@@ -313,7 +297,6 @@ const incrementUsage = (field = "aiImagesGenerated", amount = 1) => {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // ✅ زيادة بمقدار amount (ليس 1 فقط)
       user.usage[field] = (user.usage[field] || 0) + amount;
       await user.save();
 
@@ -328,7 +311,6 @@ const incrementUsage = (field = "aiImagesGenerated", amount = 1) => {
   };
 };
 
-// ── دالة لإعادة تعيين الـ usage كل شهر (دقيقة أكثر) ───────────────────────
 const resetMonthlyUsage = async () => {
   try {
     const now = new Date();
@@ -342,7 +324,6 @@ const resetMonthlyUsage = async () => {
       const lastResetMonth = lastReset.getMonth();
       const lastResetYear = lastReset.getFullYear();
 
-      // ✅ تحقق إذا كان الشهر الحالي مختلف عن آخر reset
       const shouldReset =
         currentMonth !== lastResetMonth || currentYear !== lastResetYear;
 
@@ -360,7 +341,6 @@ const resetMonthlyUsage = async () => {
   }
 };
 
-// ✅ Export كل الـ middlewares
 module.exports = {
   checkPlan,
   checkFeature,

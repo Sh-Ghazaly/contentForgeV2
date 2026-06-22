@@ -25,7 +25,6 @@
 
       <!-- Trends List -->
       <div v-else class="overflow-x-auto">
-        <!-- min-w ensures the grid doesn't break on very small mobile screens -->
         <div class="min-w-[500px] flex flex-col">
           <div 
             v-for="(trend, i) in trends" 
@@ -40,7 +39,6 @@
 
             <!-- Info (Topic & Category) -->
             <div class="flex flex-col gap-0.5 min-w-0">
-              <!-- dir="rtl" ensures Arabic hashtags always read correctly, even in English mode -->
               <span class="text-sm font-medium truncate" dir="rtl" :class="isDark ? 'text-white' : 'text-slate-900'">
                 {{ trend.tag }}
               </span>
@@ -57,7 +55,6 @@
               ></div>
             </div>
 
-            <!-- Score (text-end automatically flips for RTL/LTR) -->
             <span class="text-xs text-end" :class="isDark ? 'text-slate-400' : 'text-slate-600'">
               {{ trend.velocity }}
             </span>

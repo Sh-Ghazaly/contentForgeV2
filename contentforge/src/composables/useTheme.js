@@ -6,7 +6,6 @@ const initialDark = stored ? stored === 'dark' : prefersDark
 
 const isDark = ref(initialDark)
 
-// Apply immediately on load
 if (isDark.value) {
   document.documentElement.classList.add('dark')
   document.documentElement.classList.remove('light')

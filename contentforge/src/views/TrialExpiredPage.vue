@@ -289,7 +289,6 @@
                 : 'border border-slate-300 text-slate-700 hover:border-slate-400 hover:bg-slate-50 disabled:opacity-50',
             ]"
           >
-            <!-- ✅ أيقونة ✓ لو دي الخطة الحالية -->
             <svg
               v-if="isExactCurrentPlan(plan.key)"
               class="w-4 h-4 shrink-0"
@@ -305,7 +304,6 @@
               />
             </svg>
 
-            <!-- ✅ Spinner لو بيحمل -->
             <svg
               v-else-if="checkoutLoading === plan.key"
               class="w-4 h-4 animate-spin"
@@ -327,7 +325,6 @@
               />
             </svg>
 
-            <!-- ✅ النص حسب الحالة -->
             {{ getButtonText(plan.key) }}
           </button>
 
@@ -413,12 +410,10 @@ const annual = ref(false);
 const checkoutLoading = ref(null);
 const errorMsg = ref("");
 
-// ✅ حالة خطة المستخدم الحالية
 const userPlan = ref(null);
 const userBilling = ref(null);
 const userStatus = ref(null);
 
-// RTL Localization support logic
 const isRtl = computed(() => locale.value === "ar");
 
 const toggleKnobClass = computed(() => {
@@ -428,7 +423,6 @@ const toggleKnobClass = computed(() => {
   return "translate-x-0";
 });
 
-// ✅ دالة تحدد هل دي نفس الخطة ونفس نوع الاشتراك بالظبط
 const isExactCurrentPlan = (planKey) => {
   if (!userPlan.value || userPlan.value === "free") return false;
   if (userPlan.value !== planKey) return false;
@@ -436,13 +430,11 @@ const isExactCurrentPlan = (planKey) => {
   return userBilling.value === selectedBilling;
 };
 
-// ✅ دالة تحدد هل الزرار لازم يبقى disabled
 const isButtonDisabled = (planKey) => {
   if (checkoutLoading.value === planKey) return true;
   return isExactCurrentPlan(planKey);
 };
 
-// ✅ دالة ترجع نص الزرار حسب الحالة
 const getButtonText = (planKey) => {
   if (checkoutLoading.value === planKey) return "";
   if (isExactCurrentPlan(planKey)) {
@@ -501,20 +493,18 @@ function resetCheckoutState(event) {
   }
 }
 
-// ✅ جلب حالة الاشتراك الحالي
 async function loadStatus() {
   const token = localStorage.getItem("cf_token");
-  if (!token) return; // ← مستخدم مش logged in، مش محتاجين نجيب status
+  if (!token) return; 
 
   try {
     const status = await paymentApi.getStatus();
     userPlan.value = status?.plan || "free";
     
-    // ✅ تحديد نوع الاشتراك من الـ backend
     if (status?.subscription?.interval) {
       userBilling.value = status.subscription.interval === "year" ? "yearly" : "monthly";
     } else {
-      userBilling.value = null; // مفيش اشتراك نشط
+      userBilling.value = null; 
     }
     
     userStatus.value = status?.status || "free";
@@ -535,60 +525,12 @@ async function loadStatus() {
   }
 }
 
-// ✅ دالة حماية الصفحة - متوافقة مع بيانات المستخدم الفعلية
 function checkAccess() {
-  // const token = localStorage.getItem("cf_token");
-  // const userStr = localStorage.getItem("cf_user");
-  
-  // // 1️⃣ لو مش مسجل دخول → روح لـ Login
-  // if (!token) {
-  //   router.replace("/login");
-  //   return false;
-  // }
-  
-  // // 2️⃣ لو مسجل دخول، تحقق من حالة الـ trial
-  // if (userStr) {
-  //   try {
-  //     const user = JSON.parse(userStr);
-  //     const now = new Date();
-  //     const planEndsAt = user.planEndsAt ? new Date(user.planEndsAt) : null;
-      
-  //     // ✅ لو الـ trial لسه شغال (planEndsAt في المستقبل)
-  //     if (user?.plan === "free" && user?.isTrial && planEndsAt && planEndsAt > now) {
-  //       console.log("⚠️ Trial is still active, redirecting to dashboard");
-  //       router.replace("/dashboard");
-  //       return false;
-  //     }
-      
-  //     // ✅ لو عند خطة مدفوعة نشطة
-  //     if (user?.plan === "pro" || user?.plan === "enterprise") {
-  //       console.log("⚠️ User has active paid plan, redirecting to dashboard");
-  //       router.replace("/dashboard");
-  //       return false;
-  //     }
-      
-  //     // ✅ لو المستخدم لسه في الـ free plan ومش في trial
-  //     // يعني الـ trial انتهى أو مكنش فيه trial من الأساس
-  //     if (user?.plan === "free" && !user?.isTrial) {
-  //       // ده المستخدم اللي المفروض يوصل للصفحة دي
-  //       return true;
-  //     }
-      
-  //     // ✅ لو planEndsAt في الماضي (الـ trial انتهى)
-  //     if (user?.plan === "free" && planEndsAt && planEndsAt < now) {
-  //       return true;
-  //     }
-      
-  //   } catch (err) {
-  //     console.error("Failed to parse user data:", err);
-  //   }
-  // }
   
   return true;
 }
 
 onMounted(() => {
-  // ✅ افحص الصلاحيات الأول
   if (!checkAccess()) return;
   
   window.addEventListener("pageshow", resetCheckoutState);
