@@ -2,7 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const { User, DeletionRequest, Subscription } = require("../models");
+const { User, DeletionRequest } = require("../models");
 const protect = require("../middleware/auth");
 const { createNotification } = require("../services/notificationHelper");
 const { sendVerificationEmail } = require("../services/emailService");
@@ -32,41 +32,13 @@ router.get('/google/callback',
       failureRedirect: `${frontendUrl}/login?error=google_auth_failed`
     })(req, res, next)
   },
-  async(req, res) => {
+  (req, res) => {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
 
     if (req.user.isBlocked || req.user.moderation?.blockStatus === 'blocked') {
       return res.redirect(`${frontendUrl}/account-suspended?reason=blocked`)
     }
-
-    try {
-      const existingSubscription = await Subscription.findOne({ user: req.user._id });
-      
-      if (!existingSubscription) {
-        await Subscription.create({
-          user: req.user._id,
-          plan: 'free',
-          status: 'active',
-          limits: {
-            maxPostsPerCalendar: 10,
-            maxCalendars: 3,
-            maxImagesPerMonth: 3, // ✅ الحد الأقصى للصور
-            maxVariantBPerMonth: 5,
-          },
-          usage: {
-            postsGenerated: 0,
-            imagesGenerated: 0,
-            variantsGenerated: 0,
-          },
-          startDate: new Date(),
-        });
-        
-        console.log(`[Auth] Created free subscription for Google user: ${req.user.email}`);
-      }
-    } catch (err) {
-      console.error('[Auth] Failed to create subscription:', err);
-    }
-
+    
     const token = signToken(req.user._id)
     res.redirect(`${frontendUrl}/login-success?token=${token}&provider=google`)
   }
