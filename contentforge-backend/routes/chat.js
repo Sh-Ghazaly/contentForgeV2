@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const protect = require("../middleware/auth");
-const { Brand , ChatMessage   } = require("../models");
+const { Brand , ChatMessage, PlatformSettings   } = require("../models");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { retrieveRelevantChunks } = require("../services/embeddingService");
 
@@ -79,7 +79,9 @@ router.post("/", protect, async (req, res) => {
           : `Brand: ${brand.name}. Industry: ${brand.industry}. Audience: ${brand.targetAudience}. Tone: ${brand.tones?.join(", ")}. Avoid: ${brand.avoidTopics || "nothing"}.`;
       }
     }
-
+// 2. جيب الـ trial days من الـ settings
+    const settings = await PlatformSettings.findOne().lean();
+    const trialDays = settings?.trialDays ?? 14;
     const systemPrompt = `You are ContentForge AI, an expert Arabic and bilingual content strategist.
 ${
   brand
